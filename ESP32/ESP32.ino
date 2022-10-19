@@ -4,71 +4,131 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 
+/*inclusão das bibliotecas necessárias*/
+#include <OneWire.h>  
+#include <DallasTemperature.h>
+
 AsyncWebServer server(80);
-const char *ssid = "JAIR_MHNET";
-const char *password = "88018822";
+const char *ssid = "NET_2GC41029";
+const char *password = "4BC41029";
 
 void notFound(AsyncWebServerRequest *request)
 {
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
 }
 
+#define PIN_TEMPERATURA 15
+#define PIN_NIVEL 2
+#define PIN_PH 4
+#define PIN_BASE 14
+#define PIN_ACIDO 27
+#define PIN_LUZ 25
+#define PIN_AQUECEDOR 26
+#define PIN_BOMBA 12
+
+
 /* ------------------------------------------------------------------------------------------------------------------ */
 /* Variáveis do programa */
 float temperatura = 10;
 float ph = 7;
+float nivelAgua = 0;
 String estadoLuz = "off"; // on ou off
-String estadoNivelAgua = "alto"; // alto, médio (quase chegando no momento de repor), baixo (momento de repor)
+String estadoAquecedor = "off"; // on ou off
+String estadoBomba = "off"; // on ou off
+String estadoNivelAgua = "médio"; // alto, médio (quase chegando no momento de repor), baixo (momento de repor)
 
-float temperaturaDesejada = 35;
-float phDesejado = 9;
+/* Sensor de temperatura */
+OneWire oneWire(PIN_TEMPERATURA);  /*Protocolo OneWire*/
+/********************************************************************/
+DallasTemperature sensors(&oneWire); /*encaminha referências OneWire para o sensor*/
 
-void updateTemperature(){
-  if(temperatura < temperaturaDesejada ){
-    temperatura += 0.10;
-  }
+void ligarValvulaBase(){
+  
 }
 
-void updatePh(){
-  if(ph > phDesejado + 0.2){
-    ph -= 0.05;
-  } else if(ph < phDesejado - 0.2){
-    ph += 0.05; 
-  }
+void ligarValvulaAcido(){
+  
 }
 
-void updateInfo(float novaTemperatura, float novoPh, String novoEstadoLuz){
-    if(novaTemperatura != NULL){
-      temperaturaDesejada = novaTemperatura;
-    } if(novoPh != NULL){
-      phDesejado = novoPh;
-    } if(novoEstadoLuz != NULL && novoEstadoLuz != "null"){
+void updateInfo(String novoEstadoBomba, String novoEstadoAquecedor, String novoEstadoLuz, int ligarBase, int ligarAcido){
+    if(novoEstadoBomba != NULL && novoEstadoBomba != "null"){
+      estadoBomba = novoEstadoBomba;
+    }
+    if(novoEstadoAquecedor != NULL && novoEstadoAquecedor != "null"){
+      estadoAquecedor = novoEstadoAquecedor;
+    }
+    if(novoEstadoLuz != NULL && novoEstadoLuz != "null"){
       estadoLuz = novoEstadoLuz;
     }
+    if(ligarBase != NULL){
+      if(ligarBase == 1){
+        ligarValvulaBase();
+      }
+    }
+    if(ligarAcido != NULL){
+      if(ligarAcido == 1){
+        ligarValvulaAcido();
+      }
+    }
+}
+
+void atualizaSensorPh(){
+  
+}
+
+void atualizaSensorTemperatura(){
+   Serial.print(" Requerimento de temperatura..."); 
+   sensors.requestTemperatures(); /* Envia o comando para leitura da temperatura */
+   Serial.println("Pronto");  /*Printa "Pronto" */
+  /********************************************************************/
+   Serial.print("A temperatura é: "); /* Printa "A temperatura é:" */
+   temperatura = sensors.getTempCByIndex(0);
+   Serial.print(temperatura); /* Endereço do sensor */
+}
+
+void atualizaSensorNivelAgua(){
+  int value = analogRead(PIN_NIVEL);
+
+  Serial.println("O nível de água é: ");
+  Serial.println(value);
+  delay(500);
+}
+
+void atualizaSensores(){
+  atualizaSensorPh();
+  atualizaSensorTemperatura();
+  atualizaSensorNivelAgua();
 }
 
 void setup()
 {
   Serial.begin(115200);
+
+  pinMode(PIN_TEMPERATURA, INPUT_PULLUP);
+  sensors.begin(); /*inicia biblioteca*/
+
+  //pinMode(PIN_NIVEL, INPUT);
+  
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED)
+  /*while (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
     Serial.printf("WiFi Failed!\n");
-  }
+  }*/
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
   
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    StaticJsonDocument<150> data;
+    StaticJsonDocument<200> data;
 
     // Adiciona as informações do aquário na resposta
     data["temperatura"] = temperatura;
     data["ph"] = ph;
-    data["estadoLuz"] = estadoLuz;
+    data["nivelAgua"] = nivelAgua;
     data["estadoNivelAgua"] = estadoNivelAgua;
-    data["temperaturaDesejada"] = temperaturaDesejada;
-    data["phDesejado"] = phDesejado;
+    data["estadoLuz"] = estadoLuz;
+    data["estadoBomba"] = estadoBomba;
+    data["estadoAquecedor"] = estadoAquecedor;
     
     String response;
     serializeJson(data, response);
@@ -88,13 +148,13 @@ void setup()
     }
 
     // Atualiza os valores desejados
-    updateInfo(data["temperatura"], data["ph"], data["estadoLuz"]);
+    updateInfo(data["estadoBomba"], data["estadoAquecedor"], data["estadoLuz"], data["ligarBase"], data["ligarAcido"]);
 
-    StaticJsonDocument<100> responseData;
+    StaticJsonDocument<150> responseData;
     // Adiciona as informações do aquário na resposta
     responseData["estadoLuz"] = estadoLuz;
-    responseData["temperaturaDesejada"] = temperaturaDesejada;
-    responseData["phDesejado"] = phDesejado;
+    responseData["estadoBomba"] = estadoBomba;
+    responseData["estadoAquecedor"] = estadoAquecedor;
 
     String response;
     serializeJson(responseData, response);
@@ -108,7 +168,10 @@ void setup()
 }
 void loop()
 {
-  updateTemperature();
-  updatePh();
-  sleep(1);
+   
+   float value = analogRead(2);
+  Serial.println(value);
+  delay(500);
+/*  atualizaSensores();
+  delay(500);*/
 }
