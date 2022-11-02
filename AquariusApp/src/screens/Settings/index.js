@@ -3,7 +3,8 @@ import {View, Text, TextInput, Button} from 'react-native';
 import InfoService from '../../services/InfoService';
 import {useNavigation} from '@react-navigation/native';
 import DefaultButton from '../../components/DefaultButton';
-import {COLOR_BACKGROUND} from '../../styles/Colors';
+import styles from './styles';
+import Input from '../../components/Input';
 
 const Home = () => {
   const [temperature, setTemperature] = useState(10);
@@ -27,8 +28,15 @@ const Home = () => {
   };
 
   return (
-    <View style={{backgroundColor: COLOR_BACKGROUND}}>
+    <View style={styles.container}>
       <View>
+        <Input
+          inputValue={ph}
+          setInputValue={setPh}
+          placeholder={'placeholder'}
+          label={'Label'}
+          help={'Ex: 20x50x60'}
+        />
         <Text>pH desejado:</Text>
         <TextInput
           onChangeText={setPh}

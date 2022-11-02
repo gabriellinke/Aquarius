@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {View, Text, TextInput, Button} from 'react-native';
 import InfoService from '../../services/InfoService';
 import {useNavigation} from '@react-navigation/native';
-import {COLOR_BACKGROUND} from '../../styles/Colors';
+import styles from './styles';
 
 const Home = () => {
   const [temperature, setTemperature] = useState(10);
@@ -26,7 +26,7 @@ const Home = () => {
   };
 
   return (
-    <View style={{backgroundColor: COLOR_BACKGROUND}}>
+    <View style={styles.container}>
       <View>
         <Text>Configurações usuário</Text>
       </View>

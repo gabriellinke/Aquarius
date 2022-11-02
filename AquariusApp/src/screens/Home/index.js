@@ -46,22 +46,21 @@ const Home = ({navigation}) => {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          {/* <GenericError
-            message={
-              'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
-            }
-          /> */}
-          {/* <GenericError
-            message={
-              'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
-            }
-          /> */}
           <Text style={styles.infoText}>Temperatura atual: 20ºC</Text>
           <Text style={styles.infoText}>PH atual: 6.8</Text>
         </View>
       ) : (
         <View>
-          <Text>Não foi possível obter os parâmetros</Text>
+          <GenericError
+            message={
+              'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
+            }
+          />
+          {/* <GenericError
+            message={
+              'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
+            }
+          /> */}
         </View>
       )}
     </View>
