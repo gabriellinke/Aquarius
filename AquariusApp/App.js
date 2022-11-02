@@ -7,12 +7,23 @@
  */
 
 import React from 'react';
-import MainNavigator from './src/navigation/Stack/MainNavigator';
+
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {NavigationContainer} from '@react-navigation/native';
+import BaseTabNavigator from './src/navigation/FooterNavigator';
+
+const RootStack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <>
-      <MainNavigator />
-    </>
+    <NavigationContainer>
+      <RootStack.Navigator initialRouteName="Home">
+        <RootStack.Screen
+          name="Home"
+          component={BaseTabNavigator}
+          options={{headerShown: false}}
+        />
+      </RootStack.Navigator>
+    </NavigationContainer>
   );
 }

@@ -59,7 +59,6 @@ const Home = () => {
           onPress={() => updateLight()}
         />
       </View>
-      <Button title="Ir para a home" onPress={() => navigate('Home')} />
     </View>
   );
 };
