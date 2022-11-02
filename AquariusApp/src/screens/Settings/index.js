@@ -2,6 +2,8 @@ import React, {useState} from 'react';
 import {View, Text, TextInput, Button} from 'react-native';
 import InfoService from '../../services/InfoService';
 import {useNavigation} from '@react-navigation/native';
+import DefaultButton from '../../components/DefaultButton';
+import {COLOR_BACKGROUND} from '../../styles/Colors';
 
 const Home = () => {
   const [temperature, setTemperature] = useState(10);
@@ -25,7 +27,7 @@ const Home = () => {
   };
 
   return (
-    <View style={{backgroundColor: '#000'}}>
+    <View style={{backgroundColor: COLOR_BACKGROUND}}>
       <View>
         <Text>pH desejado:</Text>
         <TextInput
@@ -54,10 +56,8 @@ const Home = () => {
           value={ligthState}
           placeholder="Estado da lâmpada"
         />
-        <Button
-          title="Alterar estado da lâmpada"
-          onPress={() => updateLight()}
-        />
+
+        <DefaultButton width={300} height={50} text={'salvar informações'} />
       </View>
     </View>
   );

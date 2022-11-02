@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, Button} from 'react-native';
 import InfoService from '../../services/InfoService';
 import {useNavigation} from '@react-navigation/native';
+import styles from './styles';
 
 const Home = ({navigation}) => {
   const [info, setInfo] = useState();
@@ -37,27 +38,21 @@ const Home = ({navigation}) => {
   // }, []);
 
   return (
-    <View style={{backgroundColor: '#000'}}>
+    <View style={styles.container}>
       {info ? (
-        <View>
-          <Text>
-            A luz está {info.estadoLuz === 'on' ? 'ligada' : 'desligada'}
-          </Text>
-          <Text>O nível de água está {info.estadoNivelAgua}</Text>
-          <Text>pH atual: {info.ph}</Text>
-          <Text>pH desejado: {info.phDesejado}</Text>
-          <Text>temperatura atual: {info.temperatura}</Text>
-          <Text>temperatura desejada: {info.temperaturaDesejada}</Text>
+        <View
+          style={{
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text style={styles.infoText}>Temperatura atual: 20ºC</Text>
+          <Text style={styles.infoText}>PH atual: 6.8</Text>
         </View>
       ) : (
         <View>
           <Text>Não foi possível obter os parâmetros</Text>
         </View>
       )}
-      <Button
-        title="Ir para configurações"
-        onPress={() => navigate('Configuration')}
-      />
     </View>
   );
 };
