@@ -3,6 +3,7 @@ import {View, Text, Button} from 'react-native';
 import InfoService from '../../services/InfoService';
 import {useNavigation} from '@react-navigation/native';
 import styles from './styles';
+import GenericError from '../../components/GenericError';
 
 const Home = ({navigation}) => {
   const [info, setInfo] = useState();
@@ -45,6 +46,16 @@ const Home = ({navigation}) => {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
+          {/* <GenericError
+            message={
+              'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
+            }
+          /> */}
+          {/* <GenericError
+            message={
+              'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
+            }
+          /> */}
           <Text style={styles.infoText}>Temperatura atual: 20ºC</Text>
           <Text style={styles.infoText}>PH atual: 6.8</Text>
         </View>
