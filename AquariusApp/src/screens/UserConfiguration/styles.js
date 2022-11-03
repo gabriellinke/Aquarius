@@ -1,5 +1,5 @@
 import {StyleSheet} from 'react-native';
-import {COLOR_BACKGROUND} from '../../styles/Colors';
+import {COLOR_BACKGROUND, COLOR_LABEL} from '../../styles/Colors';
 
 const styles = StyleSheet.create({
   container: {
@@ -7,8 +7,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignSelf: 'center',
+  },
+  label: {
+    color: COLOR_LABEL,
+    fontWeight: 'bold',
   },
 });
 

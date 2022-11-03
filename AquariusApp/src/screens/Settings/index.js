@@ -9,6 +9,7 @@ const Home = () => {
   const [temperature, setTemperature] = useState();
   const [ph, setPh] = useState();
   const [startTime, setStartTime] = useState();
+  const [finishTime, setFinishTime] = useState();
 
   return (
     <View style={styles.container}>
@@ -20,6 +21,7 @@ const Home = () => {
             label={'Dimensões do aquário'}
             placeholder={'100x50x20'}
             help={'Exemplo: 50x30x20'}
+            mask={'dimension'}
           />
         </View>
         <View style={{marginBottom: 16}}>
@@ -28,6 +30,8 @@ const Home = () => {
             setInputValue={setTemperature}
             label={'Temperatura desejada (ºC)'}
             placeholder={'25'}
+            keyboardType="numeric"
+            maxLength={4}
           />
         </View>
         <View style={{marginBottom: 16}}>
@@ -36,6 +40,8 @@ const Home = () => {
             setInputValue={setPh}
             label={'PH desejado'}
             placeholder={'7.0'}
+            keyboardType="numeric"
+            maxLength={4}
           />
         </View>
         <View style={{marginBottom: 16}}>
@@ -44,14 +50,16 @@ const Home = () => {
             setInputValue={setStartTime}
             label={'Horário de ligar as luzes'}
             placeholder={'07:00'}
+            mask={'time'}
           />
         </View>
         <View style={{marginBottom: 16}}>
           <Input
-            inputValue={startTime}
-            setInputValue={setStartTime}
+            inputValue={finishTime}
+            setInputValue={setFinishTime}
             label={'Horário de desligar as luzes'}
             placeholder={'18:35'}
+            mask={'time'}
           />
         </View>
       </View>
