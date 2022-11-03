@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignSelf: 'center',
   },
 });
