@@ -1,13 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, Button} from 'react-native';
+import {View, Text} from 'react-native';
 import InfoService from '../../services/InfoService';
-import {useNavigation} from '@react-navigation/native';
 import styles from './styles';
 import GenericError from '../../components/GenericError';
+import DefaultButton from '../../components/DefaultButton';
+import {otherParametersNotification} from '../../services/notification';
 
 const Home = ({navigation}) => {
   const [info, setInfo] = useState();
-  const {navigate} = useNavigation();
 
   // Atualiza as informações toda vez que a tela é aberta
   useEffect(() => {
@@ -63,6 +63,12 @@ const Home = ({navigation}) => {
           /> */}
         </View>
       )}
+      <DefaultButton
+        onPress={() => otherParametersNotification()}
+        width={300}
+        height={50}
+        text={'mostrar notificação'}
+      />
     </View>
   );
 };
