@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text} from 'react-native';
+import {View, Text, ToastAndroid} from 'react-native';
 import DefaultButton from '../../components/DefaultButton';
 import Input from '../../components/Input';
 import styles from './styles';
@@ -20,6 +20,25 @@ const Home = () => {
     {label: 'Sábado', value: 'Sábado'},
     {label: 'Domingo', value: 'Domingo'},
   ]);
+
+  const showToastSuccess = () => {
+    ToastAndroid.show(
+      'Parâmetros atualizados com sucesso!',
+      ToastAndroid.SHORT,
+    );
+  };
+
+  const showToastError = () => {
+    ToastAndroid.show('Erro ao atualizar parâmetros.', ToastAndroid.SHORT);
+  };
+
+  const saveInfo = () => {
+    if (espIP) {
+      showToastSuccess();
+    } else {
+      showToastError();
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -61,7 +80,12 @@ const Home = () => {
         </View>
       </View>
       <View style={{marginBottom: 72 + 32}}>
-        <DefaultButton width={300} height={50} text={'salvar informações'} />
+        <DefaultButton
+          onPress={() => saveInfo()}
+          width={300}
+          height={50}
+          text={'salvar informações'}
+        />
       </View>
     </View>
   );

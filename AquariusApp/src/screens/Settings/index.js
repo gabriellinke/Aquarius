@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View} from 'react-native';
+import {View, ToastAndroid} from 'react-native';
 import DefaultButton from '../../components/DefaultButton';
 import styles from './styles';
 import Input from '../../components/Input';
@@ -10,6 +10,35 @@ const Home = () => {
   const [ph, setPh] = useState();
   const [startTime, setStartTime] = useState();
   const [finishTime, setFinishTime] = useState();
+
+  const showToastSuccess = () => {
+    ToastAndroid.show(
+      'Parâmetros atualizados com sucesso!',
+      ToastAndroid.SHORT,
+    );
+  };
+
+  const showToastError = () => {
+    ToastAndroid.show('Erro ao atualizar parâmetros.', ToastAndroid.SHORT);
+  };
+
+  const sending = () => {
+    ToastAndroid.show('Enviando...', ToastAndroid.SHORT);
+  };
+
+  const sendInfo = () => {
+    if (temperature > 20) {
+      sending();
+      setTimeout(() => {
+        showToastSuccess();
+      }, 200);
+    } else {
+      sending();
+      setTimeout(() => {
+        showToastError();
+      }, 200);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -64,7 +93,12 @@ const Home = () => {
         </View>
       </View>
       <View style={{marginBottom: 72 + 32}}>
-        <DefaultButton width={300} height={50} text={'enviar informações'} />
+        <DefaultButton
+          onPress={() => sendInfo()}
+          width={300}
+          height={50}
+          text={'enviar informações'}
+        />
       </View>
     </View>
   );
