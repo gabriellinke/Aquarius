@@ -3,8 +3,9 @@
 #include <ESPAsyncWebServer.h>
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
+#include "time.h"
 
-/*inclusão das bibliotecas necessárias*/
+/*inclusão das bibliotecas necessárias para sensor de temperatura*/
 #include <OneWire.h>  
 #include <DallasTemperature.h>
 
@@ -22,7 +23,7 @@
 #define PIN_BOMBA 15
 
 
-
+/* Configurações WiFi */
 AsyncWebServer server(80);
 const char *ssid = "NET_2GC41029";
 const char *password = "4BC41029";
@@ -30,6 +31,27 @@ const char *password = "4BC41029";
 void notFound(AsyncWebServerRequest *request)
 {
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
+}
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -3600*3;
+const int   daylightOffset_sec = -3600*3;
+int horaAtual = 0;
+int minutoAtual = 0;
+
+void printLocalTime()
+{
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+  }
+  horaAtual = timeinfo.tm_hour;
+  minutoAtual = timeinfo.tm_min;
+  Serial.print("Horas: ");
+  Serial.print(horaAtual);
+  Serial.print("\tMinutos: ");
+  Serial.print(minutoAtual);
+  Serial.print("\n");
 }
 
 
@@ -130,32 +152,33 @@ void atualizaSensorPh(){
 
   float ph = a*media + b;
 
-  Serial.print("\nPH:");
-  Serial.println(media);
-  Serial.print("\n:");
+  Serial.print("PH:");
+  Serial.print(media);
+  Serial.print("\n");
 }
 
 void atualizaSensorTemperatura(){
-   //Serial.print(" Requerimento de temperatura..."); 
    sensors.requestTemperatures(); /* Envia o comando para leitura da temperatura */
-   //Serial.println("Pronto");  /*Printa "Pronto" */
-  /********************************************************************/
+
    Serial.print("A temperatura e: "); /* Printa "A temperatura é:" */
    temperatura = sensors.getTempCByIndex(0);
    Serial.print(temperatura); /* Endereço do sensor */
+   Serial.print("\n");
 }
 
 void atualizaSensorNivelAgua(){
   int value = analogRead(PIN_NIVEL);
 
-  Serial.print("\n\nO nivel de agua e: ");
+  Serial.print("O nivel de agua e: ");
   Serial.println(value);
+  Serial.print("\n");
 }
 
 void atualizaSensores(){
   atualizaSensorPh();
   atualizaSensorTemperatura();
   atualizaSensorNivelAgua();
+  Serial.print("\n");
 }
 
 void setup()
@@ -173,7 +196,6 @@ void setup()
 
   pinMode(ph_value, INPUT);
 
-
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED)
@@ -183,6 +205,9 @@ void setup()
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
+  //init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  printLocalTime();
 
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -250,6 +275,7 @@ void loop()
     desligarAquecedor();
 
   atualizaSensores();
+  printLocalTime();
   delay(500);
 }
 
