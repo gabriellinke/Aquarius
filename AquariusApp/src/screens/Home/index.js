@@ -14,12 +14,12 @@ const Home = ({navigation}) => {
     const unsubscribe = navigation.addListener('focus', () => {
       // The screen is focused
       // Call any action
-      async function getInfo() {
-        let data = await InfoService.getInfo();
-        setInfo(data);
-        console.log(data);
-      }
-      getInfo();
+      // async function getInfo() {
+      //   let data = await InfoService.getInfo();
+      //   setInfo(data);
+      //   console.log(data);
+      // }
+      // getInfo();
     });
 
     // Return the function to unsubscribe from the event so it gets removed on unmount
@@ -40,7 +40,7 @@ const Home = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      {info ? (
+      {!info ? (
         <View
           style={{
             alignItems: 'center',
@@ -64,7 +64,7 @@ const Home = ({navigation}) => {
         </View>
       )}
       <DefaultButton
-        onPress={() => otherParametersNotification()}
+        onPress={async () => await InfoService.getInfo()}
         width={300}
         height={50}
         text={'mostrar notificação'}

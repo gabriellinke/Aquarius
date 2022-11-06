@@ -77,9 +77,14 @@ function getFrequency(repeatFrequency) {
 
 function createDate(hours, minutes) {
   let date = new Date(Date.now());
+  let today = new Date(Date.now());
   date.setHours(hours);
   date.setMinutes(minutes);
   date.setSeconds(0);
+  if (today.getTime() > date.getTime()) {
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
 }
 
 function createTrigger(repeatFrequency, date) {
@@ -104,7 +109,7 @@ async function waterLevelNotification() {
   if (settings.android.alarm == AndroidNotificationSetting.ENABLED) {
     await createTriggerNotification(
       'daily',
-      createDate(20, 0),
+      createDate(9, 0),
       'Atenção',
       'Lembre de verificar o nível do reservatório de água.',
       'waterLevel',
@@ -139,7 +144,7 @@ async function phSolutionLevelNotification() {
   if (settings.android.alarm == AndroidNotificationSetting.ENABLED) {
     await createTriggerNotification(
       'weekly',
-      createDate(19, 0),
+      createDate(10, 0),
       'Atenção',
       'Lembre de verificar o nível das soluções reguladoras de pH.',
       'phSolutionLevel',

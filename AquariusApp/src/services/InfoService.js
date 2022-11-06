@@ -1,9 +1,15 @@
-import api from './api';
+import axios from 'axios';
 
 class InfoService {
   async getInfo() {
     try {
-      const response = await api.get('/');
+      const api = axios.create({
+        baseURL: 'https://api.nossoolharsolidario.com.br', // URL para acessar o ESP32
+      });
+
+      console.log('RUNNING');
+      const response = await api.get('/api/items');
+      console.log(response.data);
       return response.data;
     } catch (error) {
       console.log('Failed to get info.', error);
