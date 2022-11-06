@@ -1,30 +1,36 @@
 #include <Arduino.h>
 #include <WiFi.h>
-//#include <ESPAsyncWebServer.h>
-//#include "AsyncJson.h"
-//#include "ArduinoJson.h"
+#include <ESPAsyncWebServer.h>
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
 
 /*inclusão das bibliotecas necessárias*/
 #include <OneWire.h>  
 #include <DallasTemperature.h>
 
-// AsyncWebServer server(80);
-// const char *ssid = "NET_2GC41029";
-// const char *password = "4BC41029";
 
-// void notFound(AsyncWebServerRequest *request)
-// {
-//   request->send(404, "application/json", "{\"message\":\"Not found\"}");
-// }
-
+//#define PIN_TEMPERATURA 35
+#define PIN_NIVEL 32
+#define PIN_PH 34
 #define PIN_TEMPERATURA 12
-#define PIN_NIVEL 13
-#define PIN_PH 14
+//#define PIN_NIVEL 13
+//#define PIN_PH 14
 #define PIN_BASE 5
 #define PIN_ACIDO 4
 #define PIN_LUZ 19
 #define PIN_AQUECEDOR 18
 #define PIN_BOMBA 15
+
+
+
+AsyncWebServer server(80);
+const char *ssid = "NET_2GC41029";
+const char *password = "4BC41029";
+
+void notFound(AsyncWebServerRequest *request)
+{
+  request->send(404, "application/json", "{\"message\":\"Not found\"}");
+}
 
 
 /* ------------------------------------------------------------------------------------------------------------------ */
@@ -134,8 +140,8 @@ void atualizaSensorTemperatura(){
    sensors.requestTemperatures(); /* Envia o comando para leitura da temperatura */
    //Serial.println("Pronto");  /*Printa "Pronto" */
   /********************************************************************/
-  // Serial.print("A temperatura e: "); /* Printa "A temperatura é:" */
-   //temperatura = sensors.getTempCByIndex(0);
+   Serial.print("A temperatura e: "); /* Printa "A temperatura é:" */
+   temperatura = sensors.getTempCByIndex(0);
    Serial.print(temperatura); /* Endereço do sensor */
 }
 
@@ -166,32 +172,85 @@ void setup()
   pinMode(PIN_BOMBA, OUTPUT);
 
   pinMode(ph_value, INPUT);
+
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED)
+  {
+    Serial.printf("WiFi Failed!\n");
+  }
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    StaticJsonDocument<80> data;
+
+    // Adiciona as informações do aquário na resposta
+    data["temperatura"] = temperatura;
+    data["ph"] = ph;
+
+    String response;
+    serializeJson(data, response);
+    Serial.println(response);
+    request->send(200, "application/json", response);
+  });
+
+
+
+  AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/update-info", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    StaticJsonDocument<200> data;
+    if (json.is<JsonArray>())
+    {
+      data = json.as<JsonArray>();
+    }
+    else if (json.is<JsonObject>())
+    {
+      data = json.as<JsonObject>();
+    }
+
+    //Serial.println(data["temperatura"]);
+    // Atualiza os valores desejados
+    updateInfo(data["estadoBomba"], data["estadoAquecedor"], data["estadoLuz"], data["ligarBase"], data["ligarAcido"]);
+
+    //StaticJsonDocument<100> responseData;
+    // Adiciona as informações do aquário na resposta
+    //responseData["estadoLuz"] = estadoLuz;
+    //responseData["temperaturaDesejada"] = temperaturaDesejada;
+    //responseData["phDesejado"] = phDesejado;
+
+    //String response;
+    //serializeJson(responseData, response);
+    //Serial.println(response);
+    request->send(200);
+  });
+
+  server.addHandler(handler);
+  server.onNotFound(notFound);
+  server.begin();
 }
 
 void loop()
 {
+  if(estadoLuz == "on")
+    ligarLuz();
+   else 
+    desligarLuz();
+
+  if(estadoBomba == "on")
+    ligarBomba();
+   else
+    desligarBomba();
+
+  if(estadoAquecedor == "on")
+    ligarAquecedor();
+  else
+    desligarAquecedor();
+
   atualizaSensores();
-  ligarLuz();
-  delay(5000);
-  desligarLuz();
-  atualizaSensores();
-  delay(1000);
-  ligarAquecedor();
-  delay(5000);
-  desligarAquecedor();
-  atualizaSensores();
-  delay(1000);
-  ligarValvulaBase();
-  atualizaSensores();
-  delay(5000);
-  ligarValvulaAcido();
-  atualizaSensores();
-  delay(5000);
-  ligarBomba();
-  delay(1000);
-  desligarBomba();
-  atualizaSensores();
-  delay(10000); 
+  delay(500);
 }
 
 // int ph_value;
