@@ -1,10 +1,11 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {View, Text, ToastAndroid} from 'react-native';
 import DefaultButton from '../../components/DefaultButton';
 import Input from '../../components/Input';
 import styles from './styles';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {otherParametersNotification} from '../../services/notification';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = () => {
   const [espIP, setEspIP] = useState();
@@ -21,6 +22,25 @@ const Home = () => {
     {label: 'Sábado', value: 6},
     {label: 'Domingo', value: 0},
   ]);
+
+  useEffect(() => {
+    async function loadSavedValues() {
+      const savedEspIP = await AsyncStorage.getItem('espIP');
+      const savedWeekDay = await AsyncStorage.getItem('weekDay');
+      const savedTime = await AsyncStorage.getItem('time');
+
+      if (savedEspIP) {
+        setEspIP(savedEspIP);
+      }
+      if (savedWeekDay) {
+        setWeekDay(+savedWeekDay);
+      }
+      if (savedTime) {
+        setTime(savedTime);
+      }
+    }
+    loadSavedValues();
+  }, []);
 
   const showToastSuccess = () => {
     ToastAndroid.show(
@@ -80,9 +100,15 @@ const Home = () => {
 
   const saveInfo = async () => {
     if (inputsAreValid()) {
+      // Programa as notificações
       const notificationDate = getNextDate(weekDay, time);
       await otherParametersNotification(notificationDate);
-      // to-do: salvar IP do ESP32
+
+      // Salva as informações no async storage
+      await AsyncStorage.setItem('espIP', espIP);
+      await AsyncStorage.setItem('weekDay', `${weekDay}`);
+      await AsyncStorage.setItem('time', time);
+
       showToastSuccess();
     } else {
       showToastError();
