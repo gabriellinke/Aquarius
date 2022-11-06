@@ -1,30 +1,30 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-#include "AsyncJson.h"
-#include "ArduinoJson.h"
+//#include <ESPAsyncWebServer.h>
+//#include "AsyncJson.h"
+//#include "ArduinoJson.h"
 
 /*inclusão das bibliotecas necessárias*/
 #include <OneWire.h>  
 #include <DallasTemperature.h>
 
-AsyncWebServer server(80);
-const char *ssid = "NET_2GC41029";
-const char *password = "4BC41029";
+// AsyncWebServer server(80);
+// const char *ssid = "NET_2GC41029";
+// const char *password = "4BC41029";
 
-void notFound(AsyncWebServerRequest *request)
-{
-  request->send(404, "application/json", "{\"message\":\"Not found\"}");
-}
+// void notFound(AsyncWebServerRequest *request)
+// {
+//   request->send(404, "application/json", "{\"message\":\"Not found\"}");
+// }
 
-#define PIN_TEMPERATURA 15
-#define PIN_NIVEL 2
-#define PIN_PH 4
-#define PIN_BASE 26
-#define PIN_ACIDO 27
-#define PIN_LUZ 14
-#define PIN_AQUECEDOR 12
-#define PIN_BOMBA 25
+#define PIN_TEMPERATURA 12
+#define PIN_NIVEL 13
+#define PIN_PH 14
+#define PIN_BASE 5
+#define PIN_ACIDO 4
+#define PIN_LUZ 19
+#define PIN_AQUECEDOR 18
+#define PIN_BOMBA 15
 
 
 /* ------------------------------------------------------------------------------------------------------------------ */
@@ -36,6 +36,8 @@ String estadoLuz = "off"; // on ou off
 String estadoAquecedor = "off"; // on ou off
 String estadoBomba = "off"; // on ou off
 String estadoNivelAgua = "médio"; // alto, médio (quase chegando no momento de repor), baixo (momento de repor)
+
+int ph_value;
 
 /* Sensor de temperatura */
 OneWire oneWire(PIN_TEMPERATURA);  /*Protocolo OneWire*/
@@ -103,23 +105,44 @@ void updateInfo(String novoEstadoBomba, String novoEstadoAquecedor, String novoE
 }
 
 void atualizaSensorPh(){
+  int buffer[1000];
+  int i; 
+  float media = 0;
+  for(i = 0 ; i< 1000 ; i++){
+    ph_value = analogRead(PIN_PH);
+    buffer[i]= ph_value;
+  }
+  
+  for(i = 0 ;i < 1000; i++){
+    media = media + buffer[i];
+  }
+  media = media/1000.0;
+  
+  
+  float a = -0.00341796875;
+  float b = 17.6640625;
 
+  float ph = a*media + b;
+
+  Serial.print("\nPH:");
+  Serial.println(media);
+  Serial.print("\n:");
 }
 
 void atualizaSensorTemperatura(){
-   Serial.print(" Requerimento de temperatura..."); 
+   //Serial.print(" Requerimento de temperatura..."); 
    sensors.requestTemperatures(); /* Envia o comando para leitura da temperatura */
-   Serial.println("Pronto");  /*Printa "Pronto" */
+   //Serial.println("Pronto");  /*Printa "Pronto" */
   /********************************************************************/
-   Serial.print("A temperatura é: "); /* Printa "A temperatura é:" */
-   temperatura = sensors.getTempCByIndex(0);
+  // Serial.print("A temperatura e: "); /* Printa "A temperatura é:" */
+   //temperatura = sensors.getTempCByIndex(0);
    Serial.print(temperatura); /* Endereço do sensor */
 }
 
 void atualizaSensorNivelAgua(){
   int value = analogRead(PIN_NIVEL);
 
-  Serial.println("\n\nO nível de água é: ");
+  Serial.print("\n\nO nivel de agua e: ");
   Serial.println(value);
 }
 
@@ -141,6 +164,8 @@ void setup()
   pinMode(PIN_LUZ, OUTPUT);
   pinMode(PIN_AQUECEDOR, OUTPUT);
   pinMode(PIN_BOMBA, OUTPUT);
+
+  pinMode(ph_value, INPUT);
 }
 
 void loop()
@@ -168,3 +193,35 @@ void loop()
   atualizaSensores();
   delay(10000); 
 }
+
+// int ph_value;
+
+// void setup() {
+//   Serial.begin(115200);
+//   pinMode(ph_value, INPUT); 
+// }
+
+// void loop() {
+//   int buffer[1000];
+//   int i; 
+//   float media = 0;
+//   for(i = 0 ; i< 1000 ; i++){
+//     ph_value = analogRead(15);
+//     buffer[i]= ph_value;
+//   }
+  
+//   for(i = 0 ;i < 1000; i++){
+//     media = media + buffer[i];
+//   }
+//   media = media/1000.0;
+  
+  
+//   float a = -0.00341796875;
+//   float b = 17.6640625;
+
+//   float ph = a*media + b;
+
+//   Serial.println(ph);
+//   Serial.println(media);
+//   delay(500);
+// }
