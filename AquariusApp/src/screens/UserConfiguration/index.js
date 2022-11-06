@@ -4,6 +4,7 @@ import DefaultButton from '../../components/DefaultButton';
 import Input from '../../components/Input';
 import styles from './styles';
 import DropDownPicker from 'react-native-dropdown-picker';
+import {otherParametersNotification} from '../../services/notification';
 
 const Home = () => {
   const [espIP, setEspIP] = useState();
@@ -12,13 +13,13 @@ const Home = () => {
 
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    {label: 'Segunda-feira', value: 'Segunda-feira'},
-    {label: 'Terça-feira', value: 'Terça-feira'},
-    {label: 'Quarta-feira', value: 'Quarta-feira'},
-    {label: 'Quinta-feira', value: 'Quinta-feira'},
-    {label: 'Sexta-feira', value: 'Sexta-feira'},
-    {label: 'Sábado', value: 'Sábado'},
-    {label: 'Domingo', value: 'Domingo'},
+    {label: 'Segunda-feira', value: 1},
+    {label: 'Terça-feira', value: 2},
+    {label: 'Quarta-feira', value: 3},
+    {label: 'Quinta-feira', value: 4},
+    {label: 'Sexta-feira', value: 5},
+    {label: 'Sábado', value: 6},
+    {label: 'Domingo', value: 0},
   ]);
 
   const showToastSuccess = () => {
@@ -32,8 +33,56 @@ const Home = () => {
     ToastAndroid.show('Erro ao atualizar parâmetros.', ToastAndroid.SHORT);
   };
 
-  const saveInfo = () => {
-    if (espIP) {
+  // Pega o Date da próxima notificação
+  function getNextDate(dayIndex) {
+    let today = new Date();
+    let [hours, minutes] = time.split(':');
+
+    let nextDate = new Date();
+    nextDate.setHours(hours);
+    nextDate.setMinutes(minutes);
+
+    // Se o dia da semana de hoje é o mesmo da notificação, verifica o horário da notificação. Se já passou no dia de hoje,
+    // agenda a notificação para semana que vem, senão, agenda para hoje
+    if (today.getDay() == dayIndex) {
+      console.log(nextDate.getTime(), today.getTime());
+      if (nextDate.getTime() < today.getTime()) {
+        nextDate.setDate(
+          nextDate.getDate() + ((dayIndex - 1 - nextDate.getDay() + 7) % 7) + 1,
+        );
+      }
+    } else {
+      nextDate.setDate(
+        nextDate.getDate() + ((dayIndex - 1 - nextDate.getDay() + 7) % 7) + 1,
+      );
+    }
+
+    return nextDate;
+  }
+
+  const inputsAreValid = () => {
+    if (!time || time.indexOf(':') < 0) {
+      return false;
+    }
+    if (!espIP || espIP.length < 0 || espIP.indexOf('.') < 0) {
+      return false;
+    }
+    const ipArray = espIP.split('.');
+    if (ipArray.length <= 3) {
+      return false;
+    }
+    const [hours, minutes] = time.split(':');
+    if (weekDay === null || hours < 0 || minutes < 0) {
+      return false;
+    }
+    return true;
+  };
+
+  const saveInfo = async () => {
+    if (inputsAreValid()) {
+      const notificationDate = getNextDate(weekDay, time);
+      await otherParametersNotification(notificationDate);
+      // to-do: salvar IP do ESP32
       showToastSuccess();
     } else {
       showToastError();
