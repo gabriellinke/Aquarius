@@ -4,7 +4,6 @@ import InfoService from '../../services/InfoService';
 import styles from './styles';
 import GenericError from '../../components/GenericError';
 import DefaultButton from '../../components/DefaultButton';
-import {otherParametersNotification} from '../../services/notification';
 
 const Home = ({navigation}) => {
   const [info, setInfo] = useState();
@@ -64,10 +63,28 @@ const Home = ({navigation}) => {
         </View>
       )}
       <DefaultButton
-        onPress={async () => await InfoService.getInfo()}
+        onPress={async () => await InfoService.turnLightOn()}
         width={300}
         height={50}
-        text={'mostrar notificação'}
+        text={'ligar luz'}
+      />
+      <DefaultButton
+        onPress={async () => await InfoService.turnLightOff()}
+        width={300}
+        height={50}
+        text={'desligar luz'}
+      />
+      <DefaultButton
+        onPress={async () => await InfoService.turnWaterPumpOn()}
+        width={300}
+        height={50}
+        text={'ligar bomba'}
+      />
+      <DefaultButton
+        onPress={async () => await InfoService.turnWaterPumpOff()}
+        width={300}
+        height={50}
+        text={'desligar bomba'}
       />
     </View>
   );
