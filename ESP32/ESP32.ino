@@ -59,7 +59,7 @@ void printLocalTime()
 /* Variáveis do programa */
 float temperatura = 10;
 float ph = 7;
-float nivelAgua = 0;
+int nivelAgua = 0;
 String estadoLuz = "off"; // on ou off
 String estadoAquecedor = "off"; // on ou off
 String estadoBomba = "off"; // on ou off
@@ -150,11 +150,12 @@ void atualizaSensorPh(){
   float a = -0.00341796875;
   float b = 17.6640625;
 
-  float ph = a*media + b;
+  //ph = a*media + b;
 
   Serial.print("PH:");
   Serial.print(media);
   Serial.print("\n");
+  ph = media;
 }
 
 void atualizaSensorTemperatura(){
@@ -168,6 +169,7 @@ void atualizaSensorTemperatura(){
 
 void atualizaSensorNivelAgua(){
   int value = analogRead(PIN_NIVEL);
+  nivelAgua = value;
 
   Serial.print("O nivel de agua e: ");
   Serial.println(value);
@@ -211,11 +213,12 @@ void setup()
 
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    StaticJsonDocument<80> data;
+    StaticJsonDocument<100> data;
 
     // Adiciona as informações do aquário na resposta
     data["temperatura"] = temperatura;
     data["ph"] = ph;
+    data["nivelAgua"] = nivelAgua;
 
     String response;
     serializeJson(data, response);
