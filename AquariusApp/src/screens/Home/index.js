@@ -1,91 +1,62 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useState} from 'react';
 import {View, Text} from 'react-native';
 import InfoService from '../../services/InfoService';
 import styles from './styles';
 import GenericError from '../../components/GenericError';
-import DefaultButton from '../../components/DefaultButton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = ({navigation}) => {
   const [info, setInfo] = useState();
+  const [espRegistered, setEspRegistered] = useState(true);
 
   // Atualiza as informações toda vez que a tela é aberta
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      // The screen is focused
-      // Call any action
-      // async function getInfo() {
-      //   let data = await InfoService.getInfo();
-      //   setInfo(data);
-      //   console.log(data);
-      // }
-      // getInfo();
+    const unsubscribe = navigation.addListener('focus', async () => {
+      // Verifica se o IP do ESP32 está cadastrado
+      const espIp = await AsyncStorage.getItem('espIP');
+      setEspRegistered(!!espIp);
+      // Atualiza informações
+      const data = await InfoService.getInfo();
+      setInfo(data);
+      console.log(data);
     });
 
     // Return the function to unsubscribe from the event so it gets removed on unmount
     return unsubscribe;
   }, [navigation]);
 
-  // Atualiza as informações a cada 10 segundos
-  // useEffect(() => {
-  //   async function getInfo() {
-  //     let data = await InfoService.getInfo();
-  //     setInfo(data);
-  //     console.log(data);
-  //   }
-
-  //   getInfo();
-
-  // }, []);
-
   return (
     <View style={styles.container}>
-      {!info ? (
+      {info ? (
         <View
           style={{
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-          <Text style={styles.infoText}>Temperatura atual: 20ºC</Text>
-          <Text style={styles.infoText}>PH atual: 6.8</Text>
+          <Text
+            style={
+              styles.infoText
+            }>{`Temperatura atual: ${info.temperatura}ºC`}</Text>
+          <Text style={styles.infoText}>{`PH atual: ${info.ph}`}</Text>
         </View>
       ) : (
         <View>
-          <GenericError
-            message={
-              'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
-            }
-          />
-          {/* <GenericError
-            message={
-              'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
-            }
-          /> */}
+          {espRegistered ? (
+            <GenericError
+              message={
+                'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
+              }
+            />
+          ) : (
+            <GenericError
+              message={
+                'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
+              }
+            />
+          )}
         </View>
       )}
-      <DefaultButton
-        onPress={async () => await InfoService.turnLightOn()}
-        width={300}
-        height={50}
-        text={'ligar luz'}
-      />
-      <DefaultButton
-        onPress={async () => await InfoService.turnLightOff()}
-        width={300}
-        height={50}
-        text={'desligar luz'}
-      />
-      <DefaultButton
-        onPress={async () => await InfoService.turnWaterPumpOn()}
-        width={300}
-        height={50}
-        text={'ligar bomba'}
-      />
-      <DefaultButton
-        onPress={async () => await InfoService.turnWaterPumpOff()}
-        width={300}
-        height={50}
-        text={'desligar bomba'}
-      />
     </View>
   );
 };

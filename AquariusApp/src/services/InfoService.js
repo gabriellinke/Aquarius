@@ -9,7 +9,7 @@ class InfoService {
       return response.data;
     } catch (error) {
       console.log('Failed to get info.', error);
-      return [];
+      return null;
     }
   }
 
@@ -21,7 +21,7 @@ class InfoService {
       return response.data;
     } catch (error) {
       console.log('Failed to get info.', error);
-      return [];
+      return null;
     }
   }
   async turnLightOff() {
