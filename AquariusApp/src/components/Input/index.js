@@ -1,5 +1,5 @@
 import React from 'react';
-import {SafeAreaView, TextInput, Text} from 'react-native';
+import {SafeAreaView, TextInput, Text, View} from 'react-native';
 import {COLOR_PLACEHOLDER} from '../../styles/Colors';
 import styles from './styles';
 
@@ -8,6 +8,7 @@ const Input = ({
   inputValue,
   placeholder,
   label,
+  width = 300,
   help = '',
   mask = '',
   ...rest
@@ -53,11 +54,11 @@ const Input = ({
   };
 
   return (
-    <>
+    <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
       <SafeAreaView>
         <TextInput
-          style={styles.input}
+          style={[styles.input, {width: width}]}
           onChangeText={handleInput}
           value={inputValue}
           placeholder={placeholder}
@@ -66,7 +67,7 @@ const Input = ({
         />
       </SafeAreaView>
       {help !== '' && <Text style={styles.help}>{help}</Text>}
-    </>
+    </View>
   );
 };
 

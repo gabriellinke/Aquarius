@@ -1,12 +1,15 @@
 import React, {useState, useEffect} from 'react';
-import {View, ToastAndroid} from 'react-native';
+import {View, ToastAndroid, Text} from 'react-native';
 import DefaultButton from '../../components/DefaultButton';
 import styles from './styles';
 import Input from '../../components/Input';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import InfoService from '../../services/InfoService';
 
 const Home = () => {
-  const [dimensions, setDimensions] = useState('');
+  const [height, setHeight] = useState('');
+  const [width, setWidth] = useState('');
+  const [length, setLength] = useState('');
   const [temperature, setTemperature] = useState();
   const [ph, setPh] = useState();
   const [startTime, setStartTime] = useState();
@@ -23,21 +26,30 @@ const Home = () => {
     ToastAndroid.show('Erro ao atualizar parâmetros.', ToastAndroid.SHORT);
   };
 
-  const sending = () => {
+  const showToastSending = () => {
     ToastAndroid.show('Enviando...', ToastAndroid.SHORT);
   };
 
   useEffect(() => {
     async function loadSavedValues() {
-      const savedDimensions = await AsyncStorage.getItem('dimensions');
+      const savedHeight = await AsyncStorage.getItem('height');
+      const savedLength = await AsyncStorage.getItem('length');
+      const savedWidth = await AsyncStorage.getItem('width');
       const savedTemperature = await AsyncStorage.getItem('temperature');
       const savedPh = await AsyncStorage.getItem('ph');
       const savedStartTime = await AsyncStorage.getItem('startTime');
       const savedFinishTime = await AsyncStorage.getItem('finishTime');
 
-      if (savedDimensions) {
-        setDimensions(savedDimensions);
+      if (savedHeight) {
+        setHeight(savedHeight);
       }
+      if (savedLength) {
+        setLength(savedLength);
+      }
+      if (savedWidth) {
+        setWidth(savedWidth);
+      }
+
       if (savedTemperature) {
         console.log(savedTemperature);
         setTemperature(savedTemperature);
@@ -66,7 +78,7 @@ const Home = () => {
   }
 
   function dimensionsAreValid() {
-    if (dimensions.length > 0 && dimensions.split('x').length === 3) {
+    if (height > 0 && width > 0 && length > 0) {
       return true;
     }
     return false;
@@ -98,25 +110,42 @@ const Home = () => {
     return false;
   }
 
-  function calculateVolume() {
-    const values = dimensions.split('x');
-    return +values[0] * +values[1] * +values[2];
-  }
-
   const sendInfo = async () => {
     if (inputsAreValid()) {
       // POST
-      // if(post.error)
-      // showToastError();
 
-      // Salva as informações no async storage
-      await AsyncStorage.setItem('dimensions', dimensions);
-      await AsyncStorage.setItem('temperature', temperature);
-      await AsyncStorage.setItem('ph', ph);
-      await AsyncStorage.setItem('startTime', startTime);
-      await AsyncStorage.setItem('finishTime', finishTime);
+      const info = {
+        altura: Number(height),
+        largura: Number(width),
+        comprimento: Number(length),
+        temperatura: Number(temperature),
+        ph: Number(ph),
+        horaLigar: Number(startTime.split(':')[0]),
+        minutoLigar: Number(startTime.split(':')[1]),
+        horaDesligar: Number(finishTime.split(':')[0]),
+        minutoDesligar: Number(finishTime.split(':')[1]),
+      };
+      showToastSending();
+      InfoService.updateInfo(info)
+        .then(async res => {
+          if (res === 200) {
+            await AsyncStorage.setItem('height', height);
+            await AsyncStorage.setItem('width', width);
+            await AsyncStorage.setItem('length', length);
+            await AsyncStorage.setItem('temperature', temperature);
+            await AsyncStorage.setItem('ph', ph);
+            await AsyncStorage.setItem('startTime', startTime);
+            await AsyncStorage.setItem('finishTime', finishTime);
 
-      showToastSuccess();
+            showToastSuccess();
+          } else {
+            showToastError();
+          }
+        })
+        .catch(err => {
+          console.log(err);
+          showToastError();
+        });
     } else {
       showToastError();
     }
@@ -126,14 +155,33 @@ const Home = () => {
     <View style={styles.container}>
       <View>
         <View style={{marginBottom: 16, marginTop: 32}}>
-          <Input
-            inputValue={dimensions}
-            setInputValue={setDimensions}
-            label={'Dimensões do aquário (cm³)'}
-            placeholder={'100x50x20'}
-            help={'Exemplo: 50x30x20'}
-            mask={'dimension'}
-          />
+          <Text style={styles.label}>Dimensões do aquário (cm³)</Text>
+          <View style={styles.inputContainer}>
+            <Input
+              inputValue={height}
+              setInputValue={setHeight}
+              width={88}
+              keyboardType="numeric"
+              label={'Altura'}
+              placeholder={'20'}
+            />
+            <Input
+              inputValue={width}
+              setInputValue={setWidth}
+              width={88}
+              keyboardType="numeric"
+              label={'Largura'}
+              placeholder={'16'}
+            />
+            <Input
+              inputValue={length}
+              setInputValue={setLength}
+              width={88}
+              keyboardType="numeric"
+              label={'Comprimento'}
+              placeholder={'35'}
+            />
+          </View>
         </View>
         <View style={{marginBottom: 16}}>
           <Input

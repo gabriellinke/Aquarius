@@ -13,6 +13,18 @@ class InfoService {
     }
   }
 
+  async updateInfo(info) {
+    try {
+      const api = await getApi();
+      const response = await api.post('/update-info', info);
+      console.log(response.status);
+      return response.status;
+    } catch (error) {
+      console.log('Failed to update info.', error);
+      return null;
+    }
+  }
+
   async turnLightOn() {
     try {
       const api = await getApi();
