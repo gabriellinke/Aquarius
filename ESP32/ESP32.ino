@@ -44,10 +44,10 @@ float phDesejado = 7; // pH que a água deve ter
 int nivelAgua = 2000; // nível de água atual
 int horaAtual = 0; // hora atual
 int minutoAtual = 0; // minuto atual
-int horaLigar = 0; // hora que a luz deve ser ligada
+int horaLigar = 13; // hora que a luz deve ser ligada
 int minutoLigar = 0; // minuto que a luz deve ser ligada
-int horaDesligar = 0; // hora que a luz deve ser desligada
-int minutoDesligar = 0; // minuto que a luz deve ser desligada
+int horaDesligar = 14; // hora que a luz deve ser desligada
+int minutoDesligar = 5; // minuto que a luz deve ser desligada
 float altura = 1; // Altura do aquário em cm
 float largura = 1; // Largura do aquário em cm
 float comprimento = 1; // Comprimento do aquário em cm
@@ -205,7 +205,11 @@ void verificaNivel(){
 }
 
 void verificaTemperatura(){
-
+  if(temperatura < temperaturaDesejada - OFFSET_ATIVACAO_TEMPERATURA){
+    ligarAquecedor();
+  } else {
+    desligarAquecedor();
+  }
 }
 
 void verificaPH(){
@@ -327,22 +331,14 @@ void setup()
 
 void loop()
 {
-  if(estadoLuz == "on")
-    ligarLuz();
-   else 
-    desligarLuz();
-
   if(estadoBomba == "on")
     ligarBomba();
    else
     desligarBomba();
 
-  if(estadoAquecedor == "on")
-    ligarAquecedor();
-  else
-    desligarAquecedor();
-
   atualizaSensores();
   printLocalTime();
+  verificaLuz();
+  verificaTemperatura();
   delay(500);
 }
