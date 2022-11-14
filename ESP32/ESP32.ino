@@ -193,7 +193,7 @@ void verificaLuz(){
     timestampDesligar += 24*60;
     timestampAtual += 24*60;
   }
-  if(timestampAtual >= timestampLigar  && timestampAtual <= timestampDesligar ){
+  if(timestampAtual >= timestampLigar  && timestampAtual < timestampDesligar ){
     ligarLuz();
   } else {
     desligarLuz();
@@ -287,7 +287,6 @@ void setup()
     // Adiciona as informações do aquário na resposta
     data["temperatura"] = temperatura;
     data["ph"] = ph;
-    data["nivelAgua"] = nivelAgua;
 
     String response;
     serializeJson(data, response);
@@ -308,19 +307,16 @@ void setup()
       data = json.as<JsonObject>();
     }
 
-    //Serial.println(data["temperatura"]);
-    // Atualiza os valores desejados
-    updateInfo(data["estadoBomba"], data["estadoAquecedor"], data["estadoLuz"], data["ligarBase"], data["ligarAcido"]);
+    altura = data["altura"];
+    largura = data["largura"];
+    comprimento = data["comprimento"];
+    temperaturaDesejada = data["temperatura"];
+    phDesejado = data["ph"];
+    horaLigar = data["horaLigar"];
+    horaDesligar = data["horaDesligar"];
+    minutoLigar = data["minutoLigar"];
+    minutoDesligar = data["minutoDesligar"];
 
-    //StaticJsonDocument<100> responseData;
-    // Adiciona as informações do aquário na resposta
-    //responseData["estadoLuz"] = estadoLuz;
-    //responseData["temperaturaDesejada"] = temperaturaDesejada;
-    //responseData["phDesejado"] = phDesejado;
-
-    //String response;
-    //serializeJson(responseData, response);
-    //Serial.println(response);
     request->send(200);
   });
 
@@ -331,13 +327,8 @@ void setup()
 
 void loop()
 {
-  if(estadoBomba == "on")
-    ligarBomba();
-   else
-    desligarBomba();
-
   atualizaSensores();
-  printLocalTime();
+  atualizaHorario();
   verificaLuz();
   verificaTemperatura();
   delay(500);

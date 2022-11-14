@@ -109,7 +109,7 @@ async function waterLevelNotification() {
   if (settings.android.alarm == AndroidNotificationSetting.ENABLED) {
     await createTriggerNotification(
       'daily',
-      createDate(9, 0),
+      createDate(15, 0),
       'Atenção',
       'Lembre de verificar o nível do reservatório de água.',
       'waterLevel',
@@ -143,8 +143,8 @@ async function phSolutionLevelNotification() {
   const settings = await notifee.getNotificationSettings();
   if (settings.android.alarm == AndroidNotificationSetting.ENABLED) {
     await createTriggerNotification(
-      'weekly',
-      createDate(10, 0),
+      'hourly',
+      createDate(14, 20),
       'Atenção',
       'Lembre de verificar o nível das soluções reguladoras de pH.',
       'phSolutionLevel',
