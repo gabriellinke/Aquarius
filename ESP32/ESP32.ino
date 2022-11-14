@@ -9,36 +9,78 @@
 #include <OneWire.h>  
 #include <DallasTemperature.h>
 
-
-//#define PIN_TEMPERATURA 35
+//==============================================================================================
+// Defines dos pinos utilizados pelo ESP32 
+//==============================================================================================
 #define PIN_NIVEL 32
 #define PIN_PH 34
 #define PIN_TEMPERATURA 12
-//#define PIN_NIVEL 13
-//#define PIN_PH 14
 #define PIN_BASE 5
 #define PIN_ACIDO 4
 #define PIN_LUZ 19
 #define PIN_AQUECEDOR 18
 #define PIN_BOMBA 15
 
+//==============================================================================================
+// Defines das constantes utilizadas no programa
+//==============================================================================================
+#define NIVEL_MINIMO 200
+#define VAZAO_BOMBA 2 // l/min
+#define OFFSET_ATIVACAO_PH 0.5
+#define OFFSET_ATIVACAO_TEMPERATURA 2
+#define OFFSET_NOTIFICACAO_PH 0.8
+#define OFFSET_NOTIFICACAO_TEMPERATURA 5
 
+//==============================================================================================
+// Declaração das variáveis do programa
+//==============================================================================================
+String estadoLuz = "off"; // on ou off - estado que indica se a luz está ligada ou desligada
+String estadoAquecedor = "off"; // on ou off - estado que indica se o aquecedor está ligado ou desligado
+String estadoBomba = "off"; // on ou off - estado que indica se a bomba está ligada ou desligada
+float temperatura = 25; // Temperatura atual
+float temperaturaDesejada = 25; // Temperatura que a água deve ter
+float ph = 7; // pH atual
+float phDesejado = 7; // pH que a água deve ter
+int nivelAgua = 2000; // nível de água atual
+int horaAtual = 0; // hora atual
+int minutoAtual = 0; // minuto atual
+int horaLigar = 0; // hora que a luz deve ser ligada
+int minutoLigar = 0; // minuto que a luz deve ser ligada
+int horaDesligar = 0; // hora que a luz deve ser desligada
+int minutoDesligar = 0; // minuto que a luz deve ser desligada
+float altura = 1; // Altura do aquário em cm
+float largura = 1; // Largura do aquário em cm
+float comprimento = 1; // Comprimento do aquário em cm
+// timerValvulas
+// timerNotificacaoPH
+// timerNotificacaoTemperatura
+
+//==============================================================================================
+// Configurações WiFi, temperatura e tempo
+//==============================================================================================
 /* Configurações WiFi */
 AsyncWebServer server(80);
 const char *ssid = "NET_2GC41029";
 const char *password = "4BC41029";
 
+// Resposta para quando não for encontrada a rota requisitada
 void notFound(AsyncWebServerRequest *request)
 {
   request->send(404, "application/json", "{\"message\":\"Not found\"}");
 }
 
+/* Configurações tempo */
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -3600*3;
 const int   daylightOffset_sec = -3600*3;
-int horaAtual = 0;
-int minutoAtual = 0;
 
+/* Configurações sensor de temperatura */
+OneWire oneWire(PIN_TEMPERATURA);  /*Protocolo OneWire*/
+DallasTemperature sensors(&oneWire); /*encaminha referências OneWire para o sensor*/
+
+//==============================================================================================
+// Funções
+//==============================================================================================
 void printLocalTime()
 {
   struct tm timeinfo;
@@ -53,24 +95,6 @@ void printLocalTime()
   Serial.print(minutoAtual);
   Serial.print("\n");
 }
-
-
-/* ------------------------------------------------------------------------------------------------------------------ */
-/* Variáveis do programa */
-float temperatura = 10;
-float ph = 7;
-int nivelAgua = 0;
-String estadoLuz = "off"; // on ou off
-String estadoAquecedor = "off"; // on ou off
-String estadoBomba = "off"; // on ou off
-String estadoNivelAgua = "médio"; // alto, médio (quase chegando no momento de repor), baixo (momento de repor)
-
-int ph_value;
-
-/* Sensor de temperatura */
-OneWire oneWire(PIN_TEMPERATURA);  /*Protocolo OneWire*/
-/********************************************************************/
-DallasTemperature sensors(&oneWire); /*encaminha referências OneWire para o sensor*/
 
 void ligarValvulaBase(){
   digitalWrite(PIN_BASE, HIGH);
@@ -132,6 +156,7 @@ void updateInfo(String novoEstadoBomba, String novoEstadoAquecedor, String novoE
     }
 }
 
+int ph_value; // Variável utilizada para ler o pino e pegar o valor do pH
 void atualizaSensorPh(){
   int buffer[1000];
   int i; 
@@ -281,35 +306,3 @@ void loop()
   printLocalTime();
   delay(500);
 }
-
-// int ph_value;
-
-// void setup() {
-//   Serial.begin(115200);
-//   pinMode(ph_value, INPUT); 
-// }
-
-// void loop() {
-//   int buffer[1000];
-//   int i; 
-//   float media = 0;
-//   for(i = 0 ; i< 1000 ; i++){
-//     ph_value = analogRead(15);
-//     buffer[i]= ph_value;
-//   }
-  
-//   for(i = 0 ;i < 1000; i++){
-//     media = media + buffer[i];
-//   }
-//   media = media/1000.0;
-  
-  
-//   float a = -0.00341796875;
-//   float b = 17.6640625;
-
-//   float ph = a*media + b;
-
-//   Serial.println(ph);
-//   Serial.println(media);
-//   delay(500);
-// }
