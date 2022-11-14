@@ -81,21 +81,6 @@ DallasTemperature sensors(&oneWire); /*encaminha referências OneWire para o sen
 //==============================================================================================
 // Funções
 //==============================================================================================
-void printLocalTime()
-{
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-  }
-  horaAtual = timeinfo.tm_hour;
-  minutoAtual = timeinfo.tm_min;
-  Serial.print("Horas: ");
-  Serial.print(horaAtual);
-  Serial.print("\tMinutos: ");
-  Serial.print(minutoAtual);
-  Serial.print("\n");
-}
-
 void ligarValvulaBase(){
   digitalWrite(PIN_BASE, HIGH);
   delay(300);
@@ -116,7 +101,6 @@ void desligarLuz(){
   digitalWrite(PIN_LUZ, LOW);
 }
 
-
 void ligarBomba(){
   digitalWrite(PIN_BOMBA, HIGH);
 }
@@ -133,30 +117,8 @@ void desligarAquecedor(){
   digitalWrite(PIN_AQUECEDOR, LOW);
 }
 
-
-void updateInfo(String novoEstadoBomba, String novoEstadoAquecedor, String novoEstadoLuz, int ligarBase, int ligarAcido){
-    if(novoEstadoBomba != NULL && novoEstadoBomba != "null"){
-      estadoBomba = novoEstadoBomba;
-    }
-    if(novoEstadoAquecedor != NULL && novoEstadoAquecedor != "null"){
-      estadoAquecedor = novoEstadoAquecedor;
-    }
-    if(novoEstadoLuz != NULL && novoEstadoLuz != "null"){
-      estadoLuz = novoEstadoLuz;
-    }
-    if(ligarBase != NULL){
-      if(ligarBase == 1){
-        ligarValvulaBase();
-      }
-    }
-    if(ligarAcido != NULL){
-      if(ligarAcido == 1){
-        ligarValvulaAcido();
-      }
-    }
-}
-
 int ph_value; // Variável utilizada para ler o pino e pegar o valor do pH
+// Faz a leitura do sensor de pH e atualiza o valor da variável ph
 void atualizaSensorPh(){
   int buffer[1000];
   int i; 
@@ -183,6 +145,7 @@ void atualizaSensorPh(){
   ph = media;
 }
 
+// Faz a leitura do sensor de temperatura e atualiza o valor da variável temperatura
 void atualizaSensorTemperatura(){
    sensors.requestTemperatures(); /* Envia o comando para leitura da temperatura */
 
@@ -192,6 +155,7 @@ void atualizaSensorTemperatura(){
    Serial.print("\n");
 }
 
+// Faz a leitura do sensor de nível de água e atualiza o valor da variável nivelAgua
 void atualizaSensorNivelAgua(){
   int value = analogRead(PIN_NIVEL);
   nivelAgua = value;
@@ -201,11 +165,87 @@ void atualizaSensorNivelAgua(){
   Serial.print("\n");
 }
 
+// Faz leitura de todos os sensores do projeto
 void atualizaSensores(){
   atualizaSensorPh();
   atualizaSensorTemperatura();
   atualizaSensorNivelAgua();
   Serial.print("\n");
+}
+
+// Atualiza as variáveis horaAtual e minutoAtual com o horário atual
+void atualizaHorario(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+  }
+  horaAtual = timeinfo.tm_hour;
+  minutoAtual = timeinfo.tm_min;
+}
+
+// Verifica se está no horário de deixar a luz ligada. Se está, liga a luz e, se não está, desliga a luz
+void verificaLuz(){
+  int timestampAtual = minutoAtual + 60*horaAtual;
+  int timestampLigar = minutoLigar + 60*horaLigar;
+  int timestampDesligar = minutoDesligar + 60*horaDesligar;
+
+  if(timestampDesligar < timestampLigar){
+    timestampDesligar += 24*60;
+    timestampAtual += 24*60;
+  }
+  if(timestampAtual >= timestampLigar  && timestampAtual <= timestampDesligar ){
+    ligarLuz();
+  } else {
+    desligarLuz();
+  }
+}
+
+void verificaNivel(){
+
+}
+
+void verificaTemperatura(){
+
+}
+
+void verificaPH(){
+
+}
+
+void verificaNotificacao(){
+
+}
+
+void printLocalTime()
+{
+  atualizaHorario();
+  Serial.print("Horas: ");
+  Serial.print(horaAtual);
+  Serial.print("\tMinutos: ");
+  Serial.print(minutoAtual);
+  Serial.print("\n");
+}
+
+void updateInfo(String novoEstadoBomba, String novoEstadoAquecedor, String novoEstadoLuz, int ligarBase, int ligarAcido){
+    if(novoEstadoBomba != NULL && novoEstadoBomba != "null"){
+      estadoBomba = novoEstadoBomba;
+    }
+    if(novoEstadoAquecedor != NULL && novoEstadoAquecedor != "null"){
+      estadoAquecedor = novoEstadoAquecedor;
+    }
+    if(novoEstadoLuz != NULL && novoEstadoLuz != "null"){
+      estadoLuz = novoEstadoLuz;
+    }
+    if(ligarBase != NULL){
+      if(ligarBase == 1){
+        ligarValvulaBase();
+      }
+    }
+    if(ligarAcido != NULL){
+      if(ligarAcido == 1){
+        ligarValvulaAcido();
+      }
+    }
 }
 
 void setup()
