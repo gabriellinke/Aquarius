@@ -24,8 +24,8 @@
 //==============================================================================================
 // Defines das constantes utilizadas no programa
 //==============================================================================================
-#define NIVEL_MINIMO 200
-#define VAZAO_BOMBA 2 // l/min
+#define NIVEL_MINIMO 2200
+#define VAZAO_BOMBA 33.33 // cm³/s -- 2l/min = 33.33
 #define OFFSET_ATIVACAO_PH 0.5
 #define OFFSET_ATIVACAO_TEMPERATURA 2
 #define OFFSET_NOTIFICACAO_PH 0.8
@@ -42,6 +42,7 @@ float temperaturaDesejada = 25; // Temperatura que a água deve ter
 float ph = 7; // pH atual
 float phDesejado = 7; // pH que a água deve ter
 int nivelAgua = 2000; // nível de água atual
+int medidasComNivelAbaixo = 0; // quantas medidas foram realizadas com o nível de água estando abaixo do nível
 int horaAtual = 0; // hora atual
 int minutoAtual = 0; // minuto atual
 int horaLigar = 13; // hora que a luz deve ser ligada
@@ -51,9 +52,9 @@ int minutoDesligar = 5; // minuto que a luz deve ser desligada
 float altura = 1; // Altura do aquário em cm
 float largura = 1; // Largura do aquário em cm
 float comprimento = 1; // Comprimento do aquário em cm
-// timerValvulas
-// timerNotificacaoPH
-// timerNotificacaoTemperatura
+unsigned long timestampValvulas = 0;
+unsigned long timestampNotificacaoPH = 0;
+unsigned long timestampNotificacaoTemperatura = 0;
 
 //==============================================================================================
 // Configurações WiFi, temperatura e tempo
@@ -142,7 +143,7 @@ void atualizaSensorPh(){
   Serial.print("PH:");
   Serial.print(media);
   Serial.print("\n");
-  ph = media;
+  //ph = media;
 }
 
 // Faz a leitura do sensor de temperatura e atualiza o valor da variável temperatura
@@ -183,6 +184,20 @@ void atualizaHorario(){
   minutoAtual = timeinfo.tm_min;
 }
 
+
+// Function that gets current epoch time
+unsigned long getTimestamp() {
+  time_t now;
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    //Serial.println("Failed to obtain time");
+    return(0);
+  }
+  time(&now);
+  return now;
+}
+
+
 // Verifica se está no horário de deixar a luz ligada. Se está, liga a luz e, se não está, desliga a luz
 void verificaLuz(){
   int timestampAtual = minutoAtual + 60*horaAtual;
@@ -201,7 +216,18 @@ void verificaLuz(){
 }
 
 void verificaNivel(){
-
+  if(nivelAgua < NIVEL_MINIMO){
+    medidasComNivelAbaixo++;
+    if(medidasComNivelAbaixo >= 3) {
+      medidasComNivelAbaixo = 0;
+      int tempo = ((largura*comprimento)/VAZAO_BOMBA)*1000; //
+      ligarBomba();
+      delay(tempo);
+      desligarBomba();  
+    }
+  } else {
+      medidasComNivelAbaixo = 0;
+  }
 }
 
 void verificaTemperatura(){
@@ -213,7 +239,16 @@ void verificaTemperatura(){
 }
 
 void verificaPH(){
-
+  unsigned long timestampNow = getTimestamp(); // Pego o timestamp de agora
+  if(timestampValvulas < timestampNow){ // Já posso fazer novas alterações no pH?
+    if(ph < phDesejado - OFFSET_ATIVACAO_PH){
+      ligarValvulaBase();
+      timestampValvulas = getTimestamp() + 4*60*60; // Espera 4h pra pingar outra gota
+    } else if (ph > phDesejado + OFFSET_ATIVACAO_PH) {
+      ligarValvulaAcido();
+      timestampValvulas = getTimestamp() + 4*60*60; // Espera 4h pra pingar outra gota
+    }
+  }
 }
 
 void verificaNotificacao(){
@@ -330,6 +365,9 @@ void loop()
   atualizaSensores();
   atualizaHorario();
   verificaLuz();
+  verificaNivel();
   verificaTemperatura();
+  verificaPH();
+  verificaNotificacao();
   delay(500);
 }
