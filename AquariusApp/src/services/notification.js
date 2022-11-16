@@ -181,4 +181,5 @@ export {
   temperatureNotification,
   phSolutionLevelNotification,
   otherParametersNotification,
+  displayNotification,
 };

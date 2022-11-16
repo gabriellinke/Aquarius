@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1049487639333",
+    "project_id": "aquarius-notification",
+    "storage_bucket": "aquarius-notification.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049487639333:android:431bd408a3a91af49c50cc",
+        "android_client_info": {
+          "package_name": "com.aquariusapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1049487639333-ammaf6nnm8o2lbsgl5c5getoecn227md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYQpyRGop-LYvUE6sw9PSf1KWtKdozDgA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1049487639333-ammaf6nnm8o2lbsgl5c5getoecn227md.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
