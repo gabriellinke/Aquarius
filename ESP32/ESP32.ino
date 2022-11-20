@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <HTTPClient.h>
 #include <ESPAsyncWebServer.h>
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
@@ -304,6 +305,8 @@ void setup()
   }
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
+  Serial.print("MAC Address: ");  
+  Serial.println(WiFi.macAddress());
 
   //init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -354,6 +357,33 @@ void setup()
   server.begin();
 }
 
+void sendPostRequest() {
+//Check WiFi connection status
+  if(WiFi.status()== WL_CONNECTED){
+    WiFiClient client;
+    HTTPClient http;
+  
+    // Your Domain name with URL path or IP address with path
+    http.begin(client, "http://192.168.0.13:3000/update-info");
+    
+    // If you need Node-RED/server authentication, insert user and password below
+    //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
+    
+    
+    // If you need an HTTP request with a content type: application/json, use the following:
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", "key=AAAA9FpWgyU:APA91bFXbera0I3OPrfVGrcXvauVglB6l69VPdqm6Y-uqptf5M22STJngg6GyX5AA0YigqKmam2-WR6pfqtc_iuLf0jprzSpPSf1Gtp9brUC414FB7kJ5FjgniW9SLADS-UGusPThZco");
+    int httpResponseCode = http.POST("{\"to\":\"/topics/aquarius\",\"notification\": { \"title\":\"Notificação de testes\",\"body\":\"Notificação enviada pelo ESP32\"}}");
+   
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+      
+    // Free resources
+    http.end();
+  }
+}
+ 
+    
 void loop()
 {
   atualizaSensores();
@@ -363,5 +393,6 @@ void loop()
   verificaTemperatura();
   verificaPH();
   verificaNotificacao();
-  delay(500);
+  sendPostRequest();
+  delay(5000);
 }
