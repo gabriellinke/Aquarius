@@ -52,9 +52,9 @@ int minutoDesligar = 5; // minuto que a luz deve ser desligada
 float altura = 1; // Altura do aquário em cm
 float largura = 1; // Largura do aquário em cm
 float comprimento = 1; // Comprimento do aquário em cm
-unsigned long timestampValvulas = 0;
-unsigned long timestampNotificacaoPH = 0;
-unsigned long timestampNotificacaoTemperatura = 0;
+unsigned long timestampValvulas = 4294967295;
+unsigned long timestampNotificacaoPH = 4294967295;
+unsigned long timestampNotificacaoTemperatura = 4294967295;
 
 //==============================================================================================
 // Configurações WiFi, temperatura e tempo
@@ -188,13 +188,7 @@ void atualizaHorario(){
 // Function that gets current epoch time
 unsigned long getTimestamp() {
   time_t now;
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    //Serial.println("Failed to obtain time");
-    return(0);
-  }
-  time(&now);
-  return now;
+  return time(&now);
 }
 
 
