@@ -5,6 +5,7 @@
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "time.h"
+#include "string.h"
 
 /*inclusão das bibliotecas necessárias para sensor de temperatura*/
 #include <OneWire.h>  
@@ -53,9 +54,15 @@ int minutoDesligar = 5; // minuto que a luz deve ser desligada
 float altura = 1; // Altura do aquário em cm
 float largura = 1; // Largura do aquário em cm
 float comprimento = 1; // Comprimento do aquário em cm
-unsigned long timestampValvulas = 4294967295;
-unsigned long timestampNotificacaoPH = 4294967295;
-unsigned long timestampNotificacaoTemperatura = 4294967295;
+unsigned long timestampValvulas = 4294967295; // Timestamp em que se torna possível fazer uma nova ativação das válvulas
+unsigned long proximaNotificacaoVerificarOutrosParametros = 4294967295; // Timestamp para o envio da próxima notificação para verificar os outros parâmetros
+unsigned long proximaNotificacaoVerificarReservatorioSolucoesPH = 4294967295; // Timestamp para o envio da próxima notificação para verificar os reservatórios de pH
+unsigned long proximaNotificacaoVerificarReservatorioAgua = 4294967295;  // Timestamp para o envio da próxima notificação para verificar o reservatório de água
+unsigned long ultimaNotificacaoPH = 0; // Timestamp da última notificação enviada sobre níveis anormais de pH
+unsigned long ultimaNotificacaoTemperatura = 0; // Timestamp da última notificação enviada sobre valores anormais de temperatura
+int diaDaSemanaNotificacaoOutrosParametros = 0; // Dia da semana para o envio da notificação de outros parâmetros
+int horaNotificacaoOutrosParametros = 19; // Hora para o envio da notificação de outros parâmetros
+int minutosNotificacaoOutrosParametros = 36; // Minutos para o envio da notificação de outros parâmetros
 
 //==============================================================================================
 // Configurações WiFi, temperatura e tempo
@@ -247,7 +254,128 @@ void verificaPH(){
 }
 
 void verificaNotificacao(){
+    time_t timestampNow = getTimestamp();
+    printf("Verificando...\n");
 
+    if(timestampNow > ultimaNotificacaoPH + 3600){
+        if(ph > phDesejado + OFFSET_NOTIFICACAO_PH){
+            //printf("Dispara notificação pH acima do desejado\n");
+            sendPostRequest("Atenção", "O valor do pH está acima do configurado");
+            ultimaNotificacaoPH = timestampNow;
+        } else if(ph < phDesejado - OFFSET_NOTIFICACAO_PH){
+            //printf("Dispara notificação pH abaixo do desejado\n");
+            sendPostRequest("Atenção", "O valor do pH está abaixo do configurado");
+            ultimaNotificacaoPH = timestampNow;
+        }
+    }
+
+    if(timestampNow > ultimaNotificacaoTemperatura + 3600){
+        if(temperatura > temperaturaDesejada + OFFSET_NOTIFICACAO_TEMPERATURA){
+            //printf("Dispara notificação temperatura acima da desejada\n");
+            sendPostRequest("Atenção", "O valor da temperatura está acima do configurado");
+            ultimaNotificacaoTemperatura = timestampNow;
+        } else if(temperatura < temperaturaDesejada - OFFSET_NOTIFICACAO_TEMPERATURA){
+            //printf("Dispara notificação temperatura abaixo da desejada\n");
+            sendPostRequest("Atenção", "O valor da temperatura está abaixo do configurado");
+            ultimaNotificacaoTemperatura = timestampNow;
+        }
+    }
+
+    if(timestampNow > proximaNotificacaoVerificarOutrosParametros){
+        //printf("Dispara notificação outros parâmetros\n");
+        sendPostRequest("Atenção", "Lembre de verificar os outros parâmetros do aquário.");
+        proximaNotificacaoVerificarOutrosParametros += 3600*24*7; // Nova notificação daqui a 7 dias
+    }
+
+    if(timestampNow > proximaNotificacaoVerificarReservatorioAgua){
+        //printf("Dispara notificação reservatório de água\n");
+        sendPostRequest("Atenção", "Lembre de verificar o nível do reservatório de água.");
+        proximaNotificacaoVerificarReservatorioAgua += 3600*24; // Nova notificação daqui a 1 dia
+    }
+
+    if(timestampNow > proximaNotificacaoVerificarReservatorioSolucoesPH){
+        //printf("Dispara notificação reservatório de soluções de pH\n");
+        sendPostRequest("Atenção", "Lembre de verificar o nível das soluções reguladoras de pH.");
+        proximaNotificacaoVerificarReservatorioSolucoesPH += 3600*24*7; // Nova notificação daqui a 1 dia
+    }
+}
+
+void inicializaTimestampsNotificacoes(){
+    printf("\nOutros parâmetros: \n");
+    proximaNotificacaoVerificarOutrosParametros = getNextWeekDayTimestamp(diaDaSemanaNotificacaoOutrosParametros, horaNotificacaoOutrosParametros, minutosNotificacaoOutrosParametros);
+    printf("\n\nReservatorio soluções: \n");
+    proximaNotificacaoVerificarReservatorioSolucoesPH = getNextWeekDayTimestamp(0, 19, 37);
+    printf("\n\nReservatorio água: \n");
+    proximaNotificacaoVerificarReservatorioAgua = getNextDayTimestamp(19, 38);
+}
+
+unsigned long getNextWeekDayTimestamp(int dayOfWeek, int hours, int minutes){
+    time_t now;
+    time_t timestamp;
+    time(&now);
+    struct tm  date = *localtime(&now);
+    char formatted_date[80];
+    
+    int weekDay = date.tm_wday;
+    int nowHours = date.tm_hour;
+    int nowMinutes = date.tm_min;
+    if(weekDay == dayOfWeek && hours > nowHours || weekDay == dayOfWeek && hours == nowHours && minutes > nowMinutes){
+        printf("Hoje é o dia da semana e ainda não passou da hora\n");
+        date.tm_hour = hours;
+        date.tm_min = minutes;
+        date.tm_sec = 0;
+        timestamp = mktime(&date);
+        strftime(formatted_date, sizeof(formatted_date), "%a %Y-%m-%d %H:%M:%S", &date);
+        printf("Notificação para: %s\nTimestamp da notificação: %lu", formatted_date, timestamp);
+
+    } else {
+        printf("Dia da semana já passou\n%d - %d\n", weekDay, dayOfWeek);
+        int daysToDayOfWeek = weekDay >= dayOfWeek ? (dayOfWeek - weekDay + 7) : (dayOfWeek - weekDay);
+        printf("Dias até o próximo dia da semana: %d\n", daysToDayOfWeek);
+        time_t nextDate;
+        nextDate = now + 3600*24*daysToDayOfWeek;
+        date = *localtime(&nextDate);
+        date.tm_hour = hours;
+        date.tm_min = minutes;
+        date.tm_sec = 0;
+        timestamp = mktime(&date);
+        strftime(formatted_date, sizeof(formatted_date), "%a %Y-%m-%d %H:%M:%S", &date);
+        printf("Notificação para: %s\nTimestamp da notificação: %lu\n", formatted_date, timestamp);
+    }
+    return timestamp;
+}
+
+unsigned long getNextDayTimestamp(int hours, int minutes){
+    time_t now;
+    time_t timestamp;
+    time(&now);
+    struct tm  date = *localtime(&now);
+    char formatted_date[80];
+    
+    int weekDay = date.tm_wday;
+    int nowHours = date.tm_hour;
+    int nowMinutes = date.tm_min;
+    if(hours > nowHours || hours == nowHours && minutes > nowMinutes){
+        printf("Ainda não passou da hora\n");
+        date.tm_hour = hours;
+        date.tm_min = minutes;
+        date.tm_sec = 0;
+        timestamp = mktime(&date);
+        strftime(formatted_date, sizeof(formatted_date), "%a %Y-%m-%d %H:%M:%S", &date);
+        printf("Notificação para: %s\nTimestamp da notificação: %lu", formatted_date, timestamp);
+
+    } else {
+        time_t nextDate;
+        nextDate = now + 3600*24;
+        date = *localtime(&nextDate);
+        date.tm_hour = hours;
+        date.tm_min = minutes;
+        date.tm_sec = 0;
+        timestamp = mktime(&date);
+        strftime(formatted_date, sizeof(formatted_date), "%a %Y-%m-%d %H:%M:%S", &date);
+        printf("Notificação para: %s\nTimestamp da notificação: %lu\n", formatted_date, timestamp);
+    }
+    return timestamp;
 }
 
 void printLocalTime()
@@ -312,6 +440,7 @@ void setup()
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   printLocalTime();
 
+  inicializaTimestampsNotificacoes();
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     StaticJsonDocument<100> data;
@@ -329,7 +458,7 @@ void setup()
 
 
   AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/update-info", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    StaticJsonDocument<200> data;
+    StaticJsonDocument<500> data;
     if (json.is<JsonArray>())
     {
       data = json.as<JsonArray>();
@@ -348,6 +477,10 @@ void setup()
     horaDesligar = data["horaDesligar"];
     minutoLigar = data["minutoLigar"];
     minutoDesligar = data["minutoDesligar"];
+    diaDaSemanaNotificacaoOutrosParametros = data["diaDaSemanaNotificacaoOutrosParametros"];
+    horaNotificacaoOutrosParametros = data["horaNotificacaoOutrosParametros"];
+    minutosNotificacaoOutrosParametros = data["minutosNotificacaoOutrosParametros"];
+    proximaNotificacaoVerificarOutrosParametros = getNextWeekDayTimestamp(diaDaSemanaNotificacaoOutrosParametros, horaNotificacaoOutrosParametros, minutosNotificacaoOutrosParametros);    
 
     request->send(200);
   });
@@ -357,7 +490,7 @@ void setup()
   server.begin();
 }
 
-void sendPostRequest() {
+void sendPostRequest(char* title, char* body) {
 //Check WiFi connection status
   if(WiFi.status()== WL_CONNECTED){
     WiFiClient client;
@@ -366,14 +499,18 @@ void sendPostRequest() {
     // Your Domain name with URL path or IP address with path
     http.begin(client, "http://192.168.0.13:3000/update-info");
     
-    // If you need Node-RED/server authentication, insert user and password below
-    //http.setAuthorization("REPLACE_WITH_SERVER_USERNAME", "REPLACE_WITH_SERVER_PASSWORD");
-    
-    
     // If you need an HTTP request with a content type: application/json, use the following:
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", "key=AAAA9FpWgyU:APA91bFXbera0I3OPrfVGrcXvauVglB6l69VPdqm6Y-uqptf5M22STJngg6GyX5AA0YigqKmam2-WR6pfqtc_iuLf0jprzSpPSf1Gtp9brUC414FB7kJ5FjgniW9SLADS-UGusPThZco");
-    int httpResponseCode = http.POST("{\"to\":\"/topics/aquarius\",\"notification\": { \"title\":\"Notificação de testes\",\"body\":\"Notificação enviada pelo ESP32\"}}");
+
+    char http_body[200] = "{\"to\":\"/topics/aquarius\",\"notification\": { \"title\":\"";
+    strcat(http_body, title);
+    strcat(http_body, "\",\"body\":\"");
+    strcat(http_body, body);
+    strcat(http_body, "\"}}");
+    Serial.println(http_body);
+
+    int httpResponseCode = http.POST(http_body);
    
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
@@ -393,6 +530,5 @@ void loop()
   verificaTemperatura();
   verificaPH();
   verificaNotificacao();
-  sendPostRequest();
-  delay(5000);
+  delay(500);
 }

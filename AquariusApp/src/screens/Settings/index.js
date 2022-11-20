@@ -159,7 +159,7 @@ const Home = () => {
         minutoLigar: Number(startTime.split(':')[1]),
         horaDesligar: Number(finishTime.split(':')[0]),
         minutoDesligar: Number(finishTime.split(':')[1]),
-        horaNotificacaoOutrosParametros: Number(notificationTime.split(':')[1]),
+        horaNotificacaoOutrosParametros: Number(notificationTime.split(':')[0]),
         minutosNotificacaoOutrosParametros: Number(
           notificationTime.split(':')[1],
         ),
