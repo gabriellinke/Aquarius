@@ -23,11 +23,13 @@
 #define PIN_LUZ 19
 #define PIN_AQUECEDOR 18
 #define PIN_BOMBA 15
+#define PIN_VCC_NIVEL 22
+#define PIN_GND_NIVEL 23
 
 //==============================================================================================
 // Defines das constantes utilizadas no programa
 //==============================================================================================
-#define NIVEL_MINIMO 2200
+#define NIVEL_MINIMO 2500
 #define VAZAO_BOMBA 33.33 // cm³/s -- 2l/min = 33.33
 #define OFFSET_ATIVACAO_PH 0.5
 #define OFFSET_ATIVACAO_TEMPERATURA 2
@@ -61,6 +63,7 @@ float comprimento = 1; // Comprimento do aquário em cm
 unsigned long timestampValvulas = 0; // Timestamp em que se torna possível fazer uma nova ativação das válvulas
 unsigned long ultimaNotificacaoPH = 0; // Timestamp da última notificação enviada sobre níveis anormais de pH
 unsigned long ultimaNotificacaoTemperatura = 0; // Timestamp da última notificação enviada sobre valores anormais de temperatura
+unsigned long ultimaMedidaNivel = 0; // Timestamp da última notificação enviada sobre valores anormais de temperatura
 unsigned long proximaNotificacaoVerificarOutrosParametros = 4294967295; // Timestamp para o envio da próxima notificação para verificar os outros parâmetros
 unsigned long proximaNotificacaoVerificarReservatorioSolucoesPH = 4294967295; // Timestamp para o envio da próxima notificação para verificar os reservatórios de pH
 unsigned long proximaNotificacaoVerificarReservatorioAgua = 4294967295;  // Timestamp para o envio da próxima notificação para verificar o reservatório de água
@@ -70,8 +73,8 @@ unsigned long proximaNotificacaoVerificarReservatorioAgua = 4294967295;  // Time
 //==============================================================================================
 /* Configurações WiFi */
 AsyncWebServer server(80);
-const char *ssid = "EGG_2G";
-const char *password = "708234AC";
+const char *ssid = "NET_2GC41029";
+const char *password = "4BC41029";
 
 // Certificado CA obtido via browser
 const char* rootCACertificate = \
@@ -142,6 +145,16 @@ void ligarLuz(){
   digitalWrite(PIN_LUZ, HIGH);
 }
 
+void desligarSensorNivel(){
+  digitalWrite(PIN_GND_NIVEL, LOW);
+  digitalWrite(PIN_VCC_NIVEL, LOW);
+}
+
+void ligarSensorNivel(){
+  digitalWrite(PIN_GND_NIVEL, HIGH);
+  digitalWrite(PIN_VCC_NIVEL, HIGH);
+}
+
 void desligarLuz(){
   digitalWrite(PIN_LUZ, LOW);
 }
@@ -162,32 +175,42 @@ void desligarAquecedor(){
   digitalWrite(PIN_AQUECEDOR, LOW);
 }
 
-int ph_value; // Variável utilizada para ler o pino e pegar o valor do pH
-// Faz a leitura do sensor de pH e atualiza o valor da variável ph
+#include <math.h>
+unsigned long int avgval; 
+int buffer_arr[10],temp;
+
 void atualizaSensorPh(){
-  int buffer[1000];
-  int i; 
-  float media = 0;
-  for(i = 0 ; i< 1000 ; i++){
-    ph_value = analogRead(PIN_PH);
-    buffer[i]= ph_value;
+  for(int i=0;i<10;i++) 
+  { 
+    buffer_arr[i]=analogRead(PIN_PH)/4;
+    delay(30);
   }
-  
-  for(i = 0 ;i < 1000; i++){
-    media = media + buffer[i];
+  for(int i=0;i<9;i++)
+  {
+    for(int j=i+1;j<10;j++)
+    {
+      if(buffer_arr[i]>buffer_arr[j])
+      {
+        temp=buffer_arr[i];
+        buffer_arr[i]=buffer_arr[j];
+        buffer_arr[j]=temp;
+      }
+    }
   }
-  media = media/1000.0;
+  avgval=0;
+  for(int i=2;i<8;i++)
+    avgval+=buffer_arr[i];
+  float volt=(float)avgval*3.3/1024/6; 
+  volt = roundf(volt*100);
+  volt = volt/100.0;
+  ph = -12*volt + 20.8;
+  ph = roundf(ph*100);
+  ph = ph/100.0;
   
-  
-  float a = -0.00341796875;
-  float b = 17.6640625;
-
-  //ph = a*media + b;
-
-  Serial.print("PH:");
-  Serial.print(media);
-  Serial.print("\n");
-  //ph = media;
+  Serial.print("O nivel de tensao do pH e:");
+  Serial.println(volt);
+  Serial.print("O pH e:");
+  Serial.println(ph);
 }
 
 // Faz a leitura do sensor de temperatura e atualiza o valor da variável temperatura
@@ -201,13 +224,46 @@ void atualizaSensorTemperatura(){
 }
 
 // Faz a leitura do sensor de nível de água e atualiza o valor da variável nivelAgua
+unsigned long int avgval_na; 
+int buffer_arr_na[10],temp_na;
 void atualizaSensorNivelAgua(){
-  int value = analogRead(PIN_NIVEL);
-  nivelAgua = value;
+  time_t timestampNow = getTimestamp();
+  if(ultimaMedidaNivel + 5 < timestampNow)
+  {
+    ligarSensorNivel();
+    delay(200);
 
-  Serial.print("O nivel de agua e: ");
-  Serial.println(value);
-  Serial.print("\n");
+    for(int i=0;i<10;i++) 
+    { 
+      buffer_arr_na[i]=analogRead(PIN_NIVEL);
+      //Serial.println(buffer_arr_na[i]);
+      delay(30);
+    }
+    for(int i=0;i<9;i++)
+    {
+      for(int j=i+1;j<10;j++)
+      {
+        if(buffer_arr_na[i]>buffer_arr[j])
+        {
+          temp_na=buffer_arr_na[i];
+          buffer_arr_na[i]=buffer_arr_na[j];
+          buffer_arr_na[j]=temp_na;
+        }
+      }
+    }
+    avgval_na=0;
+    for(int i=2;i<8;i++)
+      avgval_na+=buffer_arr_na[i];
+    nivelAgua = avgval_na/6;
+
+    Serial.print("O nivel de agua e: ");
+    Serial.println(nivelAgua);
+    Serial.print("\n");
+    desligarSensorNivel();
+    delay(200);
+    ultimaMedidaNivel = timestampNow;
+    verificaNivel();
+  }
 }
 
 // Faz leitura de todos os sensores do projeto
@@ -257,12 +313,13 @@ void verificaLuz(){
 void verificaNivel(){
   if(nivelAgua < NIVEL_MINIMO){
     medidasComNivelAbaixo++;
+     
     if(medidasComNivelAbaixo >= 3) {
-      medidasComNivelAbaixo = 0;
       int tempo = ((largura*comprimento)/VAZAO_BOMBA)*1000; //
       ligarBomba();
       delay(tempo);
-      desligarBomba();  
+      desligarBomba();
+       medidasComNivelAbaixo = 0;  
     }
   } else {
       medidasComNivelAbaixo = 0;
@@ -282,14 +339,17 @@ void verificaTemperatura(){
 // Verifica se o pH está abaixo. Se estiver, derruba uma gota de solução alcalina.
 // Verifica se o pH está acima. Se estiver, derruba uma gota de solução ácida.
 void verificaPH(){
-  unsigned long timestampNow = getTimestamp(); // Pego o timestamp de agora
+  time_t timestampNow = getTimestamp(); // Pego o timestamp de agora
+  Serial.println(timestampValvulas);
+  Serial.println(timestampNow);
   if(timestampValvulas < timestampNow){ // Já posso fazer novas alterações no pH?
+    
     if(ph < phDesejado - OFFSET_ATIVACAO_PH){
       ligarValvulaBase();
-      timestampValvulas = getTimestamp() + 4*60*60; // Espera 4h pra pingar outra gota
+      timestampValvulas = timestampNow + 4*60*60; // Espera 4h pra pingar outra gota
     } else if (ph > phDesejado + OFFSET_ATIVACAO_PH) {
       ligarValvulaAcido();
-      timestampValvulas = getTimestamp() + 4*60*60; // Espera 4h pra pingar outra gota
+      timestampValvulas = timestampNow + 4*60*60; // Espera 4h pra pingar outra gota
     }
   }
 }
@@ -499,8 +559,8 @@ void setup()
   pinMode(PIN_LUZ, OUTPUT);
   pinMode(PIN_AQUECEDOR, OUTPUT);
   pinMode(PIN_BOMBA, OUTPUT);
-
-  pinMode(ph_value, INPUT);
+  pinMode(PIN_GND_NIVEL, OUTPUT);
+  pinMode(PIN_VCC_NIVEL, OUTPUT);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -571,9 +631,9 @@ void loop()
   atualizaSensores();
   atualizaHorario();
   verificaLuz();
-  verificaNivel();
-  verificaTemperatura();
   verificaPH();
+  //verificaNivel();
+  verificaTemperatura();
   verificaNotificacao();
   delay(500);
 }
