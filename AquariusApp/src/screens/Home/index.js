@@ -37,8 +37,10 @@ const Home = ({navigation}) => {
           <Text
             style={
               styles.infoText
-            }>{`Temperatura atual: ${info.temperatura}ºC`}</Text>
-          <Text style={styles.infoText}>{`PH atual: ${info.ph}`}</Text>
+            }>{`Temperatura atual: ${info.temperatura.toFixed(2)}ºC`}</Text>
+          <Text style={styles.infoText}>{`PH atual: ${info.ph.toFixed(
+            1,
+          )}`}</Text>
         </View>
       ) : (
         <View>
