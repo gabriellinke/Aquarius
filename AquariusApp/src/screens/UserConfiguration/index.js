@@ -58,7 +58,7 @@ const Home = () => {
           <Input
             inputValue={espIP}
             setInputValue={setEspIP}
-            label={'IP do ESP32'}
+            label={'IP do Mexilhãozinho'}
             placeholder={'xxx.xxx.xxx.xxx'}
             help={'Exemplo: 192.168.0.1'}
             mask={'ip'}

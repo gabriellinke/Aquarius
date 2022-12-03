@@ -47,13 +47,13 @@ const Home = ({navigation}) => {
           {espRegistered ? (
             <GenericError
               message={
-                'Ops! Houve um problema de comunicação. Verifique sua conexão e a do ESP32.'
+                'Ops! Houve um problema de comunicação. Verifique sua conexão e a do Mexilhãozinho.'
               }
             />
           ) : (
             <GenericError
               message={
-                'Ops! Você ainda não cadastrou o IP do ESP32. Acesse as configurações de usuário.'
+                'Ops! Você ainda não cadastrou o IP do Mexilhãozinho. Acesse as configurações de usuário.'
               }
             />
           )}
