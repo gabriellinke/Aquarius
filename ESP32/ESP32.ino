@@ -3,6 +3,8 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ESPAsyncWebServer.h>
+#include <Adafruit_ADS1X15.h>
+#include <Wire.h>
 #include "AsyncJson.h"
 #include "ArduinoJson.h"
 #include "time.h"
@@ -15,21 +17,21 @@
 //==============================================================================================
 // Defines dos pinos utilizados pelo ESP32 
 //==============================================================================================
-#define PIN_NIVEL 32
-#define PIN_PH 34
-#define PIN_TEMPERATURA 12
+#define PIN_NIVEL 3
+#define PIN_PH 0
+#define PIN_TEMPERATURA 25
 #define PIN_BASE 5
 #define PIN_ACIDO 4
 #define PIN_LUZ 19
 #define PIN_AQUECEDOR 18
 #define PIN_BOMBA 15
-#define PIN_VCC_NIVEL 22
+#define PIN_VCC_NIVEL 2
 #define PIN_GND_NIVEL 23
 
 //==============================================================================================
 // Defines das constantes utilizadas no programa
 //==============================================================================================
-#define NIVEL_MINIMO 2500
+#define NIVEL_MINIMO 220
 #define VAZAO_BOMBA 33.33 // cm³/s -- 2l/min = 33.33
 #define OFFSET_ATIVACAO_PH 0.5
 #define OFFSET_ATIVACAO_TEMPERATURA 2
@@ -67,12 +69,15 @@ unsigned long ultimaMedidaNivel = 0; // Timestamp da última notificação envia
 unsigned long proximaNotificacaoVerificarOutrosParametros = 4294967295; // Timestamp para o envio da próxima notificação para verificar os outros parâmetros
 unsigned long proximaNotificacaoVerificarReservatorioSolucoesPH = 4294967295; // Timestamp para o envio da próxima notificação para verificar os reservatórios de pH
 unsigned long proximaNotificacaoVerificarReservatorioAgua = 4294967295;  // Timestamp para o envio da próxima notificação para verificar o reservatório de água
+Adafruit_ADS1015 ads1015; // Utilizado para o conversor AD
 
 //==============================================================================================
 // Configurações WiFi, temperatura e tempo
 //==============================================================================================
 /* Configurações WiFi */
 AsyncWebServer server(80);
+//const char *ssid = "Aquarius";
+//const char *password = "Aquarius";
 const char *ssid = "NET_2GC41029";
 const char *password = "4BC41029";
 
@@ -175,19 +180,16 @@ void desligarAquecedor(){
   digitalWrite(PIN_AQUECEDOR, LOW);
 }
 
-#include <math.h>
-unsigned long int avgval; 
-int buffer_arr[10],temp;
-
 void atualizaSensorPh(){
-  for(int i=0;i<10;i++) 
+  int buffer_arr[1000], temp;
+  for(int i=0;i<1000;i++) 
   { 
-    buffer_arr[i]=analogRead(PIN_PH)/4;
-    delay(30);
+    buffer_arr[i]=ads1015.readADC_SingleEnded(PIN_PH);
+    delay(5);
   }
-  for(int i=0;i<9;i++)
+  for(int i=0;i<999;i++)
   {
-    for(int j=i+1;j<10;j++)
+    for(int j=i+1;j<1000;j++)
     {
       if(buffer_arr[i]>buffer_arr[j])
       {
@@ -197,18 +199,16 @@ void atualizaSensorPh(){
       }
     }
   }
-  avgval=0;
-  for(int i=2;i<8;i++)
+  float avgval=0.0;
+  for(int i=200;i<800;i++)
     avgval+=buffer_arr[i];
-  float volt=(float)avgval*3.3/1024/6; 
-  volt = roundf(volt*100);
-  volt = volt/100.0;
-  ph = -12*volt + 20.8;
+  float volt=(float)avgval*3.0/1000/600; 
+  ph = -5.5555555*volt + 21.722222222;
   ph = roundf(ph*100);
   ph = ph/100.0;
   
   Serial.print("O nivel de tensao do pH e:");
-  Serial.println(volt);
+  Serial.println(volt, 7);
   Serial.print("O pH e:");
   Serial.println(ph);
 }
@@ -225,7 +225,7 @@ void atualizaSensorTemperatura(){
 
 // Faz a leitura do sensor de nível de água e atualiza o valor da variável nivelAgua
 unsigned long int avgval_na; 
-int buffer_arr_na[10],temp_na;
+int buffer_arr_na[10],temp_na, buffer_arr[10];
 void atualizaSensorNivelAgua(){
   time_t timestampNow = getTimestamp();
   if(ultimaMedidaNivel + 5 < timestampNow)
@@ -235,8 +235,7 @@ void atualizaSensorNivelAgua(){
 
     for(int i=0;i<10;i++) 
     { 
-      buffer_arr_na[i]=analogRead(PIN_NIVEL);
-      //Serial.println(buffer_arr_na[i]);
+      buffer_arr_na[i]=ads1015.readADC_SingleEnded(PIN_NIVEL);
       delay(30);
     }
     for(int i=0;i<9;i++)
@@ -407,9 +406,9 @@ void inicializaTimestampsNotificacoes(){
     printf("\nOutros parâmetros: \n");
     proximaNotificacaoVerificarOutrosParametros = getNextWeekDayTimestamp(diaDaSemanaNotificacaoOutrosParametros, horaNotificacaoOutrosParametros, minutosNotificacaoOutrosParametros); // Notificação semanal no dia e horário definido pelo usuário
     printf("\n\nReservatorio soluções: \n");
-    proximaNotificacaoVerificarReservatorioSolucoesPH = getNextWeekDayTimestamp(1, 17, 30); // Notificação semanal - Às 17:30 de segunda-feira
+    proximaNotificacaoVerificarReservatorioSolucoesPH = getNextWeekDayTimestamp(3, 10, 35); // Notificação semanal - Às 10:35 de quarta-feira
     printf("\n\nReservatorio água: \n");
-    proximaNotificacaoVerificarReservatorioAgua = getNextDayTimestamp(15, 30); // Notificação diária às 15:30
+    proximaNotificacaoVerificarReservatorioAgua = getNextDayTimestamp(10, 40); // Notificação diária às 10:40
 }
 
 // Retorna o timestamp da próxima notificação semanal. 
@@ -549,10 +548,11 @@ void sendPostRequest(char* title, char* body) {
 // Inicializa o ESP32 e outros parâmetros
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   pinMode(PIN_TEMPERATURA, INPUT_PULLUP);
-  sensors.begin(); /*inicia biblioteca*/
+  sensors.begin(); /* Inicia biblioteca do sensor de temperatura*/
+  ads1015.begin(0x48); /* Inicia biblioteca do conversor AD */
 
   pinMode(PIN_BASE, OUTPUT);
   pinMode(PIN_ACIDO, OUTPUT);
